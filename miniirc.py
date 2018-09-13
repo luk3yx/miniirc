@@ -31,6 +31,7 @@ class IRC:
     connected  = False
     sendq      = None
     _main_lock = None
+    _sasl      = False
 
     # Debug print()
     def debug(self, *args, **kwargs):
@@ -39,9 +40,9 @@ class IRC:
 
     # Send raw messages
     def quote(self, *msg, force = None):
-        self.debug('>>>', *msg)
         if self.connected or force:
-            if self.sendq:
+            self.debug('>>>', *msg)
+            if self.sendq and self.connected:
                 sendq      = self.sendq
                 self.sendq = None
                 for i in sendq:
@@ -49,6 +50,7 @@ class IRC:
             msg = '{}\n'.format(' '.join(msg)).encode('utf-8')
             self.sock.send(msg)
         else:
+            self.debug('>Q>', *msg)
             if not self.sendq:
                 self.sendq = []
             self.sendq.append(msg)
@@ -79,6 +81,10 @@ class IRC:
             self.debug('SSL handshake')
             self.sock = ssl.wrap_socket(self.sock)
         self.sock.connect((self.ip, self.port))
+        # Iterate over the caps list to make it easier to pick up ACKs and NAKs.
+        for cap in self.ircv3_caps:
+            self.debug('Requesting IRCv3 capability', cap)
+            self.quote('CAP', 'REQ', ':' + cap, force = True)
         self.quote('USER', self.ident, '0', '*', ':' + self.realname,
             force = True)
         self.quote('NICK', self.nick, force = True)
@@ -182,7 +188,8 @@ class IRC:
       persist       = False,
       debug         = False,
       ns_identity   = None,
-      auto_connect  = True
+      auto_connect  = True,
+      ircv3_caps    = set()
       ):
         # Set basic variables
         self.ip             = ip
@@ -195,6 +202,11 @@ class IRC:
         self.persist        = persist
         self._debug         = debug
         self.ns_identity    = ns_identity
+        self.ircv3_caps     = set(ircv3_caps or [])
+        
+        # Add SASL
+        if self.ns_identity:
+            self.ircv3_caps.add('sasl')
 
         # Add handlers
         self.handlers       = copy.deepcopy(_global_handlers)
@@ -210,8 +222,8 @@ class IRC:
 def _handler(irc, hostmask, args):
     irc.connected = True
     irc.debug('Connected!')
-    if irc.ns_identity:
-        irc.debug('Logging in...')
+    if not irc._sasl and irc.ns_identity:
+        irc.debug('Logging in (no SASL, aww)...')
         irc.msg('NickServ', 'identify ' + irc.ns_identity)
     irc.debug('*** Joining channels...', irc.channels)
     irc.quote('JOIN', ','.join(irc.channels))
@@ -245,6 +257,33 @@ def _handler(irc, hostmask, args):
         return
     if args[-1].startswith(':\x01VERSION') and args[-1].endswith('\x01'):
         irc.ctcp(hostmask[0], 'VERSION', version, reply = True)
+
+# SASL
+@Handler('CAP')
+def _handler(irc, hostmask, args):
+    if len(args) < 3 or not self.ns_identity:
+        return
+    elif args[1] == 'ACK' and args[2].replace(':', '', 1) == 'sasl':
+        irc.quote('AUTHENTICATE PLAIN', force = True)
+
+@Handler('AUTHENTICATE')
+def _handler(irc, hostmask, args):
+    if len(args) > 0 and args[0] == '+':
+        from base64 import b64encode
+        irc._sasl = True
+        pw = irc.ns_identity.split(' ')
+        pw = '{0}\x00{0}\x00{1}'.format(*pw).encode('utf-8')
+        irc.quote('AUTHENTICATE', b64encode(pw).decode('utf-8'), force = True)
+
+@Handler('904', '905')
+def _handler(irc, hostmask, args):
+    irc._sasl = False
+    irc.quote('AUTHENTICATE *', force = True)
+
+@Handler('903', '904', '905')
+def _handler(irc, hostmask, args):
+    if len(irc.ircv3_caps) < 2:
+        irc.quote('CAP END', force = True)
 
 del _handler
 
