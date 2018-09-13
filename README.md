@@ -37,7 +37,7 @@ irc = miniirc.IRC(ip, port, nick, channels = None, *, ssl = None, ident = None, 
 | `Hander(...)` | An event handler, see [Handlers](#handlers) for more info.|
 | `main()`      | Starts the main loop in a thread if not already running.  |
 | `msg(target, *msg)`         | Sends a `PRIVMSG` to `target`.              |
-| `notice(target, *msg)       | Sends a `NOTICE` to `target`.               |
+| `notice(target, *msg)`      | Sends a `NOTICE` to `target`.               |
 | `quote(*msg, force=None)` | Sends a raw message to IRC, use `force=True` to send while disconnected. |
 
 ## Handlers
@@ -55,6 +55,7 @@ def handler(irc, hostmask, args):
     # args:     A list containing the arguments sent to the command.
     #             Everything following the first `:` in the command
     #             is put into one item (args[-1]).
+    pass
 ~~~
 
 ### Hostmask object
