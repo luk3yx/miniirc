@@ -28,4 +28,47 @@ irc = miniirc.IRC(ip, port, nick, channels = None, *, ssl = None, ident = None, 
 
 ## Functions
 
-Functions are not yet documented, see the source code.
+| Function      | Description                                               |
+| ------------- | --------------------------------------------------------  |
+| `connect()`   | Connects to the IRC server if not already connected.      |
+| `ctcp(target, *msg)`        | Sends a `CTCP` request to `target`.         |
+| `debug(...)`  | Debug, calls `print(...)` if debug mode is on.            |
+| `disconnect()`| Disconnects from the IRC server.                          |
+| `Hander(...)` | An event handler, see [Handlers](#handlers) for more info.|
+| `main()`      | Starts the main loop in a thread if not already running.  |
+| `msg(target, *msg)`         | Sends a `PRIVMSG` to `target`.              |
+| `notice(target, *msg)       | Sends a `NOTICE` to `target`.               |
+| `quote(*msg, force=None)` | Sends a raw message to IRC, use `force=True` to send while disconnected. |
+
+## Handlers
+
+Handlers are `@-rules` called in their own thread when their respective IRC event(s) is/are received. Handlers may be global (` @miniirc.handler`) or local (` @miniirc.IRC().handler`) to a certain IRC connection.
+
+The basic syntax for a handler is as followed, where `*events` is a list of events (`PRIVMSG`, `NOTICE`, etc) are called.
+
+~~~py
+import miniirc
+@miniirc.Handler(*events)
+def handler(irc, hostmask, args):
+    # irc:      An 'IRC' object.
+    # hostmask: A 'hostmask' object.
+    # args:     A list containing the arguments sent to the command.
+    #             Everything following the first `:` in the command
+    #             is put into one item (args[-1]).
+~~~
+
+### Hostmask object
+
+Hostmasks are tuples with the format `('user', 'ident', 'hostname')`. If `ident` and `hostname` aren't sent from the server, they will be filled in with the previous value. If a command is received without a hostmask, all the `hostmask` parameters will be set to the name of the command.
+
+### Example
+
+~~~py
+import miniirc
+
+@miniirc.Handler('PRIVMSG', 'NOTICE')
+def handler(irc, hostmask, args):
+    print(hostmask[0], 'sent a message to', args[0], 'with content', args[1])
+~~~
+
+This will print a line whenever the bot gets a `PRIVMSG` or `NOTICE`.
