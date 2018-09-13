@@ -6,6 +6,7 @@
 import atexit, copy, threading, socket, ssl, sys
 from time import sleep
 __all__ = ['Handler', 'IRC']
+version = 'miniirc IRC framework v0.1'
 
 # Create global handlers
 _global_handlers = {}
@@ -59,8 +60,9 @@ class IRC:
     def notice(self, target, *msg):
         return self.quote('NOTICE {} :{}'.format(target, ' '.join(msg)))
 
-    def ctcp(self, target, *msg):
-        return self.msg(target, '\x01{}\x01'.format(' '.join(msg)))
+    def ctcp(self, target, *msg, reply = False):
+        m = (self.notice if reply else self.msg)
+        return m(target, '\x01{}\x01'.format(' '.join(msg)))
 
     # Allow per-connection handlers
     def Handler(self, *events):
@@ -236,6 +238,13 @@ def _handler(irc, hostmask, args):
 def _handler(irc, hostmask, args):
     if hostmask[0].lower() == irc.nick.lower():
         irc.nick = args[-1]
+
+@Handler('PRIVMSG')
+def _handler(irc, hostmask, args):
+    if not version:
+        return
+    if args[-1].startswith(':\x01VERSION') and args[-1].endswith('\x01'):
+        irc.ctcp(hostmask[0], 'VERSION', version, reply = True)
 
 del _handler
 
