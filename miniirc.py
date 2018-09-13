@@ -261,7 +261,7 @@ def _handler(irc, hostmask, args):
 # SASL
 @Handler('CAP')
 def _handler(irc, hostmask, args):
-    if len(args) < 3 or not self.ns_identity:
+    if len(args) < 3 or not irc.ns_identity:
         return
     elif args[1] == 'ACK' and args[2].replace(':', '', 1) == 'sasl':
         irc.quote('AUTHENTICATE PLAIN', force = True)
