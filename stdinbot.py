@@ -18,8 +18,7 @@ identity = False
 print_cmds = False
 
 channels = ['#lurk']
-
-connected = False
+debug    = False
 
 ip = 'xeroxirc.net'
 port = 6697
@@ -27,31 +26,7 @@ port = 6697
 # Welcome!
 print("Welcome to stdinbot!", file=sys.stderr)
 irc = IRC(ip, port, nick, channels, ident = ident, realname = realname,
-    ns_identity = identity, debug = True, auto_connect = False)
-
-# Handle normal messages
-@irc.Handler('PRIVMSG')
-def handle_privmsg(irc, hostmask, args):
-    channel = args[0]
-    args = args[-1][1:].split(' ')
-    cmd = args[0].lower()
-    # Unprefixed commands here
-    if cmd.startswith("meep"):
-        irc.msg(channel, "Meep™!")
-    elif cmd.startswith('<'):
-        # Prefixed commands
-        cmd = cmd[1:]
-        if cmd == 'yay':
-            irc.msg(channel, "\u200bYay!")
-        elif cmd == 'rev':
-            if len(args) > 1:
-                irc.msg(channel, "{}: {}".format(hostmask[0], ' '.join(args[1:])[::-1]))
-            else:
-                irc.msg(channel, "Invalid syntax! Syntax: <rev <string>")
-        elif cmd == 'about':
-            irc.msg(channel, 'I am stdinbot, a simple IRC bot that reads text from stdin and prints it to a channel.')
-        elif print_cmds and cmd != '':
-            print(' '.join(args)[1:])
+    ns_identity = identity, debug = debug, auto_connect = False)
 
 # Read stdin
 @irc.Handler('001')
