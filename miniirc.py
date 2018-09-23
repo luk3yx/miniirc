@@ -128,7 +128,7 @@ class IRC:
             raw = raw.replace(b'\r', b'\n').split(b'\n')
             for line in raw:
                 try:
-                    line = line.decode('utf-8')
+                    line = line.decode('utf-8', errors = 'replace')
                 except UnicodeDecodeError:
                     self.debug('Bad line:', line)
                     line = ''
