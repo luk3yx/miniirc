@@ -57,10 +57,12 @@ class IRC:
 
     # User-friendly msg, notice, and ctcp functions.
     def msg(self, target, *msg):
-        return self.quote('PRIVMSG {} :{}'.format(target, ' '.join(msg)))
+        return self.quote('PRIVMSG', str(target),
+            ':' + ' '.join(msg).replace('\r', ' ').replace('\n', ' '))
 
     def notice(self, target, *msg):
-        return self.quote('NOTICE {} :{}'.format(target, ' '.join(msg)))
+        return self.quote('NOTICE', str(target),
+            ':' + ' '.join(msg).replace('\r', ' ').replace('\n', ' '))
 
     def ctcp(self, target, *msg, reply = False):
         m = (self.notice if reply else self.msg)
@@ -203,7 +205,7 @@ class IRC:
         self._debug         = debug
         self.ns_identity    = ns_identity
         self.ircv3_caps     = set(ircv3_caps or [])
-        
+
         # Add SASL
         if self.ns_identity:
             self.ircv3_caps.add('sasl')
