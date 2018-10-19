@@ -68,6 +68,9 @@ class IRC:
         m = (self.notice if reply else self.msg)
         return m(target, '\x01{}\x01'.format(' '.join(msg)))
 
+    def me(self, target, *msg):
+        return self.ctcp(target, 'ACTION', *msg)
+
     # Allow per-connection handlers
     def Handler(self, *events):
         return _add_handler(self.handlers, events)
@@ -169,7 +172,7 @@ class IRC:
                     if cmd in self.handlers:
                         for handler in self.handlers[cmd]:
                             t = threading.Thread(target = handler,
-                                args = (self, hostmask, args))
+                                args = (self, hostmask, copy.copy(args)))
                             t.start()
 
     # Thread the main loop
@@ -288,15 +291,3 @@ def _handler(irc, hostmask, args):
         irc.quote('CAP END', force = True)
 
 del _handler
-
-# Debugging - Makes a bot join #lurk and print all PRIVMSGs.
-if __name__ == '__main__':
-    import os
-    @Handler('PRIVMSG')
-    def _handle(irc, hostmask, args):
-        if args[-1] == ':,quit':
-            irc.disconnect()
-            print('Found ,quit')
-        irc.debug(args[0], '<{}>'.format(hostmask[0]), args[1][1:])
-    irc = IRC('xeroxirc.net', 6697, 'stdoutbot', ['#lurk'],
-       debug = 'debug' in os.environ)

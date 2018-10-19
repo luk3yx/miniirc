@@ -37,6 +37,7 @@ irc = miniirc.IRC(ip, port, nick, channels = None, *, ssl = None, ident = None, 
 | `disconnect()`| Disconnects from the IRC server.                          |
 | `Hander(...)` | An event handler, see [Handlers](#handlers) for more info.|
 | `main()`      | Starts the main loop in a thread if not already running.  |
+| `me(target, *msg)`          | Sends a `/me` (`CTCP ACTION`) to `target`.  |
 | `msg(target, *msg)`         | Sends a `PRIVMSG` to `target`.              |
 | `notice(target, *msg)`      | Sends a `NOTICE` to `target`.               |
 | `quote(*msg, force=None)` | Sends a raw message to IRC, use `force=True` to send while disconnected. |
