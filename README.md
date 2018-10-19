@@ -26,7 +26,7 @@ irc = miniirc.IRC(ip, port, nick, channels = None, *, ssl = None, ident = None, 
 | `ns_identity` | The NickServ account to use (`<user> <password>`).        |
 | `auto_connect`| Runs `.connect()` straight away.                          |
 | `ircv3_caps`  | A set() of IRCv3 capabilities to request. SASL is auto-added if `ns_identity` is specified. |
-| `verify_ssl`  | Verifies SSL certificates. Disabling this is not recommended. |
+| `verify_ssl`  | Verifies SSL certificates. Disabling this is not recommended. If you have trouble with SSL certificate verification, try running `pip3 install certifi` first. |
 
 ## Functions
 
