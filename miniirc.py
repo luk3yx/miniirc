@@ -268,7 +268,7 @@ def _handler(irc, hostmask, args):
 def _handler(irc, hostmask, args):
     if len(args) < 3 or not irc.ns_identity:
         return
-    elif args[1] == 'ACK' and args[2].replace(':', '', 1) == 'sasl':
+    elif args[1] == 'ACK' and args[2].replace(':', '', 1).startswith('sasl'):
         irc.quote('AUTHENTICATE PLAIN', force = True)
 
 @Handler('AUTHENTICATE')
