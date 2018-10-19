@@ -9,7 +9,7 @@ A simple IRC client framework.
 ## Parameters
 
 ~~~py
-irc = miniirc.IRC(ip, port, nick, channels = None, *, ssl = None, ident = None, realname = None, persist = False, debug = False, ns_identity = None, auto_connect = True, ircv3_caps = set())
+irc = miniirc.IRC(ip, port, nick, channels = None, *, ssl = None, ident = None, realname = None, persist = False, debug = False, ns_identity = None, auto_connect = True, ircv3_caps = set(), verify_ssl = True)
 ~~~
 
 | Parameter     | Description                                                |
@@ -26,6 +26,7 @@ irc = miniirc.IRC(ip, port, nick, channels = None, *, ssl = None, ident = None, 
 | `ns_identity` | The NickServ account to use (`<user> <password>`).        |
 | `auto_connect`| Runs `.connect()` straight away.                          |
 | `ircv3_caps`  | A set() of IRCv3 capabilities to request. SASL is auto-added if `ns_identity` is specified. |
+| `verify_ssl`  | Verifies SSL certificates. Disabling this is not recommended. |
 
 ## Functions
 
@@ -34,7 +35,7 @@ irc = miniirc.IRC(ip, port, nick, channels = None, *, ssl = None, ident = None, 
 | `connect()`   | Connects to the IRC server if not already connected.      |
 | `ctcp(target, *msg, reply=False)` | Sends a `CTCP` request or reply to `target`. |
 | `debug(...)`  | Debug, calls `print(...)` if debug mode is on.            |
-| `disconnect()`| Disconnects from the IRC server.                          |
+| `disconnect(msg = ..., *, auto_reconnect = False)`| Disconnects from the IRC server. `auto_reconnect` will be overriden by `self.persist` if set to `True`. |
 | `Hander(...)` | An event handler, see [Handlers](#handlers) for more info.|
 | `main()`      | Starts the main loop in a thread if not already running.  |
 | `me(target, *msg)`          | Sends a `/me` (`CTCP ACTION`) to `target`.  |

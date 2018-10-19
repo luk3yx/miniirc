@@ -6,7 +6,13 @@
 import atexit, copy, threading, socket, ssl, sys
 from time import sleep
 __all__ = ['Handler', 'IRC']
-version = 'miniirc IRC framework v0.1'
+version = 'miniirc IRC framework v0.2'
+
+# Get the certificate list.
+try:
+    from certifi import where as get_ca_certs
+except ImportError:
+    get_ca_certs = lambda : None
 
 # Create global handlers
 _global_handlers = {}
@@ -47,7 +53,7 @@ class IRC:
                 self.sendq = None
                 for i in sendq:
                     self.quote(*i)
-            msg = '{}\n'.format(' '.join(msg)).encode('utf-8')
+            msg = '{}\r\n'.format(' '.join(msg)).encode('utf-8')[:512]
             self.sock.send(msg)
         else:
             self.debug('>Q>', *msg)
@@ -84,8 +90,15 @@ class IRC:
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         if self.ssl:
             self.debug('SSL handshake')
-            self.sock = ssl.wrap_socket(self.sock)
+            if self.verify_ssl:
+                self.sock = ssl.wrap_socket(self.sock,
+                    cert_reqs=ssl.CERT_REQUIRED, ca_certs = get_ca_certs(),
+                        do_handshake_on_connect = True)
+            else:
+                self.sock = ssl.wrap_socket(self.sock,
+                    do_handshake_on_connect = True)
         self.sock.connect((self.ip, self.port))
+        self.verify_ssl and ssl.match_hostname(self.sock.getpeercert(), self.ip)
         # Iterate over the caps list to make it easier to pick up ACKs and NAKs.
         for cap in self.ircv3_caps:
             self.debug('Requesting IRCv3 capability', cap)
@@ -98,8 +111,9 @@ class IRC:
         self.main()
 
     # An easier way to disconnect
-    def disconnect(self, msg = 'I grew sick and died.'):
-        self.persist = False
+    def disconnect(self, msg = 'I grew sick and died.', *,
+      auto_reconnect = False):
+        self.persist   = auto_reconnect and self.persist
         self.connected = False
         atexit.unregister(self.disconnect)
         try:
@@ -120,10 +134,10 @@ class IRC:
                     raw += self.sock.recv(4096)
                     if c > 100:
                         self.debug('Waited 100 times on the socket!')
-                        raise NotImplementedError('Spam detected')
+                        raise Exception('Spam detected')
                 except Exception as e:
                     self.debug('Lost connection! ', repr(e))
-                    self.disconnect()
+                    self.disconnect(auto_reconnect = True)
                     if self.persist:
                         sleep(5)
                         self.debug('Reconnecting...')
@@ -190,11 +204,12 @@ class IRC:
       ssl           = None, # None: Auto
       ident         = None,
       realname      = None,
-      persist       = False,
+      persist       = True,
       debug         = False,
       ns_identity   = None,
       auto_connect  = True,
-      ircv3_caps    = set()
+      ircv3_caps    = set(),
+      verify_ssl    = True,
       ):
         # Set basic variables
         self.ip             = ip
@@ -208,6 +223,7 @@ class IRC:
         self._debug         = debug
         self.ns_identity    = ns_identity
         self.ircv3_caps     = set(ircv3_caps or [])
+        self.verify_ssl     = verify_ssl
 
         # Add SASL
         if self.ns_identity:
