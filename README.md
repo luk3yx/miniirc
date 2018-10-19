@@ -32,7 +32,7 @@ irc = miniirc.IRC(ip, port, nick, channels = None, *, ssl = None, ident = None, 
 | Function      | Description                                               |
 | ------------- | --------------------------------------------------------  |
 | `connect()`   | Connects to the IRC server if not already connected.      |
-| `ctcp(target, *msg)`        | Sends a `CTCP` request to `target`.         |
+| `ctcp(target, *msg, reply=False)` | Sends a `CTCP` request or reply to `target`. |
 | `debug(...)`  | Debug, calls `print(...)` if debug mode is on.            |
 | `disconnect()`| Disconnects from the IRC server.                          |
 | `Hander(...)` | An event handler, see [Handlers](#handlers) for more info.|
@@ -44,7 +44,7 @@ irc = miniirc.IRC(ip, port, nick, channels = None, *, ssl = None, ident = None, 
 
 ## Handlers
 
-Handlers are `@-rules` called in their own thread when their respective IRC event(s) is/are received. Handlers may be global (` @miniirc.handler`) or local (` @miniirc.IRC().handler`) to a certain IRC connection.
+Handlers are `@-rules` called in their own thread when their respective IRC event(s) is/are received. Handlers may be global (`@miniirc.handler`) or local (`@miniirc.IRC().handler`) to a certain IRC connection. New handlers are not added to existing IRC connections automatically, either define handlers before you initialise the `miniirc.IRC` object or add them as local handlers.
 
 The basic syntax for a handler is as followed, where `*events` is a list of events (`PRIVMSG`, `NOTICE`, etc) are called.
 
