@@ -9,7 +9,7 @@ A simple IRC client framework.
 ## Parameters
 
 ~~~py
-irc = miniirc.IRC(ip, port, nick, channels = None, *, ssl = None, ident = None, realname = None, persist = False, debug = False, ns_identity = None, auto_connect = True, ircv3_caps = set(), verify_ssl = True)
+irc = miniirc.IRC(ip, port, nick, channels = None, *, ssl = None, ident = None, realname = None, persist = True, debug = False, ns_identity = None, auto_connect = True, ircv3_caps = set(), verify_ssl = True)
 ~~~
 
 | Parameter     | Description                                                |
