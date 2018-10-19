@@ -209,7 +209,7 @@ class IRC:
       ns_identity   = None,
       auto_connect  = True,
       ircv3_caps    = set(),
-      verify_ssl    = True,
+      verify_ssl    = True
       ):
         # Set basic variables
         self.ip             = ip
