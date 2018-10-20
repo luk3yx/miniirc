@@ -53,7 +53,7 @@ class IRC:
                 self.sendq = None
                 for i in sendq:
                     self.quote(*i)
-            msg = '{}\r\n'.format(' '.join(msg)).encode('utf-8')[:512]
+            msg = '{}'.format(' '.join(msg)).encode('utf-8')[:510] + b'\r\n'
             self.sock.send(msg)
         else:
             self.debug('>Q>', *msg)
