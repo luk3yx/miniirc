@@ -132,8 +132,8 @@ class IRC:
                 c += 1
                 try:
                     raw += self.sock.recv(4096)
-                    if c > 100:
-                        self.debug('Waited 100 times on the socket!')
+                    if c > 1000:
+                        self.debug('Waited 1,000 times on the socket!')
                         raise Exception('Spam detected')
                 except Exception as e:
                     self.debug('Lost connection! ', repr(e))
