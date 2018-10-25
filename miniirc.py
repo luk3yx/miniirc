@@ -131,7 +131,7 @@ class IRC:
             while not raw.endswith(b'\n'):
                 c += 1
                 try:
-                    raw += self.sock.recv(4096)
+                    raw += self.sock.recv(4096).replace(b'\r', b'\n')
                     if c > 1000:
                         self.debug('Waited 1,000 times on the socket!')
                         raise Exception('Spam detected')
@@ -144,7 +144,7 @@ class IRC:
                         self._main_lock = None
                         self.connect()
                     return
-            raw = raw.replace(b'\r', b'\n').split(b'\n')
+            raw = raw.split(b'\n')
             for line in raw:
                 try:
                     line = line.decode('utf-8', errors = 'replace')
