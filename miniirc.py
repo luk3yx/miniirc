@@ -98,7 +98,8 @@ class IRC:
                 self.sock = ssl.wrap_socket(self.sock,
                     do_handshake_on_connect = True)
         self.sock.connect((self.ip, self.port))
-        self.verify_ssl and ssl.match_hostname(self.sock.getpeercert(), self.ip)
+        if self.ssl and self.verify_ssl:
+            ssl.match_hostname(self.sock.getpeercert(), self.ip)
         # Iterate over the caps list to make it easier to pick up ACKs and NAKs.
         for cap in self.ircv3_caps:
             self.debug('Requesting IRCv3 capability', cap)
