@@ -38,8 +38,7 @@ def handle_stdin(irc, hostmask, args):
         except:
             line = '\x04'
         if line == '\x04':
-            irc.disconnect(qmsg)
-            return os._exit(0)
+            return irc.disconnect(qmsg)
         irc.msg(channels[0], line)
 
 irc.connect()
