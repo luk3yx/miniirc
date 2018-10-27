@@ -77,5 +77,5 @@ This will print a line whenever the bot gets a `PRIVMSG` or `NOTICE`.
 
 ## Working examples/implementations
 
-There is a working bot and stdinbot (dumps stdin to an IRC channel) on
+There is a working example and stdinbot (dumps stdin to an IRC channel) on
 [luk3yx/stdinbot](https://gitlab.com/luk3yx/stdinbot).
