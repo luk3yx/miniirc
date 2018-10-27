@@ -7,15 +7,16 @@ with open('README.md', 'r') as f:
 
 setup(
     name        = 'miniirc',
-    version     = '0.2.3',
+    version     = '0.2.4',
     py_modules  = ['miniirc'],
     author      = 'luk3yx',
     description = 'A lightweight IRC framework.',
     license     = 'MIT',
+    url         = 'https://gitlab.com/luk3yx/miniirc',
 
-    long_description              = desc,
-    long_description_content_type = 'text/markdown',
-    install_requires              = ['certifi'],
+    long_description_markdown_filename = 'README.md',
+    setup_requires                     = ['setuptools-markdown'],
+    install_requires                   = ['certifi'],
 
     classifiers = [
         'Intended Audience :: Developers',
