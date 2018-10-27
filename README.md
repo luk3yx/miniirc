@@ -2,6 +2,8 @@
 
 A simple IRC client framework.
 
+To install miniirc, simply run `pip3 install miniirc` as root.
+
 ## Parameters
 
 ~~~py
