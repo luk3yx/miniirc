@@ -1,7 +1,3 @@
-# stdinbot
-
-A stupidly simple IRC bot to interact with stdin.
-
 # miniirc
 
 A simple IRC client framework.
