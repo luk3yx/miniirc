@@ -6,7 +6,7 @@
 import atexit, copy, threading, socket, ssl, sys
 from time import sleep
 __all__ = ['Handler', 'IRC']
-version = 'miniirc IRC framework v0.2.7'
+version = 'miniirc IRC framework v0.2.8'
 
 # Get the certificate list.
 try:
@@ -210,6 +210,7 @@ class IRC:
       ns_identity   = None,
       auto_connect  = True,
       ircv3_caps    = set(),
+      connect_modes = None,
       quit_message  = 'I grew sick and died.',
       verify_ssl    = True
       ):
@@ -225,6 +226,7 @@ class IRC:
         self._debug         = debug
         self.ns_identity    = ns_identity
         self.ircv3_caps     = set(ircv3_caps or [])
+        self.connect_modes  = connect_modes
         self.quit_message   = quit_message
         self.verify_ssl     = verify_ssl
 
@@ -246,6 +248,8 @@ class IRC:
 def _handler(irc, hostmask, args):
     irc.connected = True
     irc.debug('Connected!')
+    if irc.connect_modes:
+        irc.quote('MODE', irc.nick, irc.connect_modes)
     if not irc._sasl and irc.ns_identity:
         irc.debug('Logging in (no SASL, aww)...')
         irc.msg('NickServ', 'identify ' + irc.ns_identity)
