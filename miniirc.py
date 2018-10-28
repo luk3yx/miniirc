@@ -6,7 +6,7 @@
 import atexit, copy, threading, socket, ssl, sys
 from time import sleep
 __all__ = ['Handler', 'IRC']
-version = 'miniirc IRC framework v0.2'
+version = 'miniirc IRC framework v0.2.7'
 
 # Get the certificate list.
 try:
@@ -112,13 +112,13 @@ class IRC:
         self.main()
 
     # An easier way to disconnect
-    def disconnect(self, msg = 'I grew sick and died.', *,
-      auto_reconnect = False):
+    def disconnect(self, msg = None, *, auto_reconnect = False):
         self.persist   = auto_reconnect and self.persist
         self.connected = False
+        msg            = msg or self.quit_message
         atexit.unregister(self.disconnect)
         try:
-            self.quote('QUIT :' + msg, force = True)
+            self.quote('QUIT :' + str(msg), force = True)
             self.sock.shutdown()
         except:
             pass
@@ -210,6 +210,7 @@ class IRC:
       ns_identity   = None,
       auto_connect  = True,
       ircv3_caps    = set(),
+      quit_message  = 'I grew sick and died.',
       verify_ssl    = True
       ):
         # Set basic variables
@@ -224,6 +225,7 @@ class IRC:
         self._debug         = debug
         self.ns_identity    = ns_identity
         self.ircv3_caps     = set(ircv3_caps or [])
+        self.quit_message   = quit_message
         self.verify_ssl     = verify_ssl
 
         # Add SASL

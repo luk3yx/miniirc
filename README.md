@@ -7,7 +7,7 @@ To install miniirc, simply run `pip3 install miniirc` as root.
 ## Parameters
 
 ~~~py
-irc = miniirc.IRC(ip, port, nick, channels = None, *, ssl = None, ident = None, realname = None, persist = True, debug = False, ns_identity = None, auto_connect = True, ircv3_caps = set(), verify_ssl = True)
+irc = miniirc.IRC(ip, port, nick, channels = None, *, ssl = None, ident = None, realname = None, persist = True, debug = False, ns_identity = None, auto_connect = True, ircv3_caps = set(), quit_message  = 'I grew sick and died.', verify_ssl = True)
 ~~~
 
 | Parameter     | Description                                                |
@@ -24,6 +24,7 @@ irc = miniirc.IRC(ip, port, nick, channels = None, *, ssl = None, ident = None, 
 | `ns_identity` | The NickServ account to use (`<user> <password>`).        |
 | `auto_connect`| Runs `.connect()` straight away.                          |
 | `ircv3_caps`  | A set() of IRCv3 capabilities to request. SASL is auto-added if `ns_identity` is specified. |
+| `quit_message`| Sets the default quit message. This can be modified per-quit with `irc.disconnect()`. |
 | `verify_ssl`  | Verifies SSL certificates. Disabling this is not recommended. If you have trouble with SSL certificate verification, try running `pip3 install certifi` first. |
 
 ## Functions
