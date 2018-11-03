@@ -6,7 +6,7 @@
 import atexit, copy, threading, socket, ssl, sys
 from time import sleep
 __all__ = ['Handler', 'IRC']
-version = 'miniirc IRC framework v0.2.8'
+version = 'miniirc IRC framework v0.2.9'
 
 # Get the certificate list.
 try:
@@ -299,7 +299,7 @@ def _handler(irc, hostmask, args):
     if len(args) > 0 and args[0] == '+':
         from base64 import b64encode
         irc._sasl = True
-        pw = irc.ns_identity.split(' ')
+        pw = irc.ns_identity.split(' ', 1)
         pw = '{0}\x00{0}\x00{1}'.format(*pw).encode('utf-8')
         irc.quote('AUTHENTICATE', b64encode(pw).decode('utf-8'), force = True)
 
