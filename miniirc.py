@@ -6,7 +6,7 @@
 import atexit, copy, threading, socket, ssl, sys
 from time import sleep
 __all__ = ['Handler', 'IRC']
-version = 'miniirc IRC framework v0.2.11'
+version = 'miniirc IRC framework v0.2.12'
 
 # Get the certificate list.
 try:
