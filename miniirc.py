@@ -6,7 +6,7 @@
 import atexit, copy, threading, socket, ssl, sys
 from time import sleep
 __all__ = ['Handler', 'IRC']
-version = 'miniirc IRC framework v0.2.9'
+version = 'miniirc IRC framework v0.2.10'
 
 # Get the certificate list.
 try:
@@ -87,7 +87,9 @@ class IRC:
             self.debug('Already connected!')
             return
         self.debug('Connecting to', self.ip, 'port', self.port)
-        self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        addrinfo  = socket.getaddrinfo(self.ip, self.port, 0,
+            socket.SOCK_STREAM)[0]
+        self.sock = socket.socket(*addrinfo[:2])
         if self.ssl:
             self.debug('SSL handshake')
             if self.verify_ssl:
@@ -97,7 +99,7 @@ class IRC:
             else:
                 self.sock = ssl.wrap_socket(self.sock,
                     do_handshake_on_connect = True)
-        self.sock.connect((self.ip, self.port))
+        self.sock.connect(addrinfo[4])
         if self.ssl and self.verify_ssl:
             ssl.match_hostname(self.sock.getpeercert(), self.ip)
         # Iterate over the caps list to make it easier to pick up ACKs and NAKs.
