@@ -8,7 +8,7 @@
 import atexit, copy, threading, socket, ssl, sys
 from time import sleep
 __all__ = ['Handler', 'IRC']
-version = 'miniirc IRC framework v0.3.0'
+version = 'miniirc IRC framework v0.3.1'
 
 # Get the certificate list.
 try:
@@ -171,11 +171,7 @@ class IRC:
                             if len(tag) == 1:
                                 tags[tag[0]] = True
                             elif len(tag) == 2:
-                                key = tag[0]
-                                tag = tag[1].replace(r'\s', ' ').replace(r'\r',
-                                    '\r').replace(r'\n', '\n').replace(r'\:',
-                                    ';').replace(r'\\', '\\')
-                                tags[key] = tag
+                                tags[tag[0]] = tag[1]
 
                     # Process arguments
                     if n[0].startswith(':'):

@@ -74,6 +74,9 @@ If you want your handler to support IRCv3 message tags, you need to add
 to your function after `hostmask`. IRCv3 tags are sent to the handlers as
 `dict`s, with values of either strings or `True`.
 
+IRCv3 tags support is still in beta, and returned tags are currently not
+un-escaped, however this may change in the future.
+
 ~~~py
 import miniirc
 @miniirc.Handler(*events, ircv3 = True)
