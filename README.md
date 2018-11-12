@@ -1,7 +1,8 @@
 # miniirc
 
-A simple IRC client framework.
 [![Available on PyPI.](https://img.shields.io/pypi/v/miniirc.svg)](https://pypi.org/project/miniirc/)
+
+A simple IRC client framework.
 
 To install miniirc, simply run `pip3 install miniirc` as root.
 
