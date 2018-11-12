@@ -107,7 +107,7 @@ class IRC:
         if self.ssl and self.verify_ssl:
             ssl.match_hostname(self.sock.getpeercert(), self.ip)
         # Begin IRCv3 CAP negotiation.
-        self._unhandled_caps = set()
+        self._unhandled_caps = None
         self.quote('CAP LS 302', force = True)
         self.quote('USER', self.ident, '0', '*', ':' + self.realname,
             force = True)
@@ -130,11 +130,10 @@ class IRC:
 
     # Finish capability negotiation
     def finish_negotiation(self, cap):
+        self.debug('Capability', cap, 'handled.')
         if self._unhandled_caps:
             self._unhandled_caps.remove(cap)
-            irc.debug('Unhandled caps:', self._unhandled_caps)
             if len(self._unhandled_caps) < 1:
-                irc.debug('Finishing capability negotiation...')
                 self._unhandled_caps = None
                 self.quote('CAP END', force = True)
 
@@ -343,9 +342,12 @@ def _handler(irc, hostmask, args):
         irc.quote('CAP REQ', ':' + ' '.join(req), force = True)
     elif args[1] == 'ACK' and args[-1].startswith(':'):
         caps = args[-1][1:].split(' ')
+        if not irc._unhandled_caps:
+            irc._unhandled_caps = set()
         for raw in caps:
             raw = raw.split('=', 1)
             cap = raw[0]
+            irc._unhandled_caps.add(cap.lower())
             handled = irc._launch_handlers('IRCV3 ' + cap.upper(),
                 ('CAP', 'CAP', 'CAP'), {}, raw)
             if not handled:
