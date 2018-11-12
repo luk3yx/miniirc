@@ -1,6 +1,7 @@
 # miniirc
 
 A simple IRC client framework.
+[![Available on PyPI.][https://img.shields.io/pypi/v/miniirc.svg]](https://pypi.org/project/miniirc/)
 
 To install miniirc, simply run `pip3 install miniirc` as root.
 
@@ -41,7 +42,7 @@ irc = miniirc.IRC(ip, port, nick, channels = None, *, ssl = None, ident = None, 
 | `me(target, *msg)`          | Sends a `/me` (`CTCP ACTION`) to `target`.  |
 | `msg(target, *msg)`         | Sends a `PRIVMSG` to `target`.              |
 | `notice(target, *msg)`      | Sends a `NOTICE` to `target`.               |
-| `quote(*msg, force=None)` | Sends a raw message to IRC, use `force=True` to send while disconnected. |
+| `quote(*msg, force=None)` | Sends a raw message to IRC, use `force=True` to send while disconnected. Do not send multiple commands in one `irc.quote()`, as the newlines will be stripped and it will be sent as one command. |
 
 ## Handlers
 
@@ -64,6 +65,20 @@ def handler(irc, hostmask, args):
 ### Hostmask object
 
 Hostmasks are tuples with the format `('user', 'ident', 'hostname')`. If `ident` and `hostname` aren't sent from the server, they will be filled in with the previous value. If a command is received without a hostmask, all the `hostmask` parameters will be set to the name of the command.
+
+### IRCv3 tags
+
+If you want your handler to support IRCv3 message tags, you need to add
+`ircv3 = True` to the `Handler` at-rule. You will need to add a `tags` parameter
+to your function after `hostmask`. IRCv3 tags are sent to the handlers as
+`dict`s, with values of either strings or `True`.
+
+~~~py
+import miniirc
+@miniirc.Handler(*events, ircv3 = True)
+def handler(irc, hostmask, tags, args):
+    pass
+~~~
 
 ### Example
 

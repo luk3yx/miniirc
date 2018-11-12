@@ -1,12 +1,14 @@
 #!/usr/bin/python3
 #
-# Mini IRC framework
+# miniirc - A small-ish (under 400 lines) IRC framework.
+#
+# © 2018 by luk3yx and other developers of miniirc.
 #
 
 import atexit, copy, threading, socket, ssl, sys
 from time import sleep
 __all__ = ['Handler', 'IRC']
-version = 'miniirc IRC framework v0.2.12'
+version = 'miniirc IRC framework v0.3.0'
 
 # Get the certificate list.
 try:
@@ -17,7 +19,7 @@ except ImportError:
 # Create global handlers
 _global_handlers = {}
 
-def _add_handler(handlers, events):
+def _add_handler(handlers, events, ircv3):
     def _finish_handler(func):
         for event in events:
             event = str(event).upper()
@@ -25,12 +27,14 @@ def _add_handler(handlers, events):
                 handlers[event] = []
             if func not in handlers[event]:
                 handlers[event].append(func)
+        if ircv3:
+            func.miniirc_ircv3 = True
         return func
 
     return _finish_handler
 
-def Handler(*events):
-    return _add_handler(_global_handlers, events)
+def Handler(*events, ircv3 = False):
+    return _add_handler(_global_handlers, events, ircv3)
 
 # Create the IRC class
 class IRC:
@@ -53,7 +57,8 @@ class IRC:
                 self.sendq = None
                 for i in sendq:
                     self.quote(*i)
-            msg = ' '.join(msg).encode('utf-8')[:510] + b'\r\n'
+            msg = ' '.join(msg).replace('\r', ' ').replace('\n', ' ').encode(
+                'utf-8')[:510] + b'\r\n'
             self.sock.send(msg)
         else:
             self.debug('>Q>', *msg)
@@ -63,12 +68,10 @@ class IRC:
 
     # User-friendly msg, notice, and ctcp functions.
     def msg(self, target, *msg):
-        return self.quote('PRIVMSG', str(target),
-            ':' + ' '.join(msg).replace('\r', ' ').replace('\n', ' '))
+        return self.quote('PRIVMSG', str(target), ':' + ' '.join(msg))
 
     def notice(self, target, *msg):
-        return self.quote('NOTICE', str(target),
-            ':' + ' '.join(msg).replace('\r', ' ').replace('\n', ' '))
+        return self.quote('NOTICE',  str(target), ':' + ' '.join(msg))
 
     def ctcp(self, target, *msg, reply = False):
         m = (self.notice if reply else self.msg)
@@ -78,8 +81,8 @@ class IRC:
         return self.ctcp(target, 'ACTION', *msg)
 
     # Allow per-connection handlers
-    def Handler(self, *events):
-        return _add_handler(self.handlers, events)
+    def Handler(self, *events, ircv3 = False):
+        return _add_handler(self.handlers, events, ircv3)
 
     # The connect function
     def connect(self):
@@ -155,7 +158,25 @@ class IRC:
                     self.debug('Bad line:', line)
                     line = ''
                 if len(line) > 0:
+                    self.debug('<<<', line)
                     n = line.split(' ')
+
+                    # Process IRCv3 tags
+                    tags = {}
+                    if n[0].startswith('@'):
+                        i = n[0][1:].split(';')
+                        del n[0]
+                        for tag in i:
+                            tag = tag.split('=', 1)
+                            if len(tag) == 1:
+                                tags[tag[0]] = True
+                            elif len(tag) == 2:
+                                key = tag[0]
+                                tag = tag[1].replace(r'\s', ' ').replace(r'\r',
+                                    '\r').replace(r'\n', '\n').replace(r'\:',
+                                    ';').replace(r'\\', '\\')
+                                tags[key] = tag
+
                     # Process arguments
                     if n[0].startswith(':'):
                         while len(n) < 2:
@@ -183,13 +204,15 @@ class IRC:
                             break
                         else:
                             args.append(i)
-                    self.debug('<<<', hostmask, cmd, args)
 
                     # Launch all handlers for the command
                     if cmd in self.handlers:
                         for handler in self.handlers[cmd]:
+                            params = [self, hostmask, copy.copy(args)]
+                            if hasattr(handler, 'miniirc_ircv3'):
+                                params.insert(2, copy.copy(tags))
                             t = threading.Thread(target = handler,
-                                args = (self, hostmask, copy.copy(args)))
+                                args = params)
                             t.start()
 
     # Thread the main loop
