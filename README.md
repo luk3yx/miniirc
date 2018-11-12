@@ -47,7 +47,7 @@ irc = miniirc.IRC(ip, port, nick, channels = None, *, ssl = None, ident = None, 
 
 ## Handlers
 
-Handlers are `@-rules` called in their own thread when their respective IRC event(s) is/are received. Handlers may be global (`@miniirc.handler`) or local (`@miniirc.IRC().handler`) to a certain IRC connection. New handlers are not added to existing IRC connections automatically, either define handlers before you initialise the `miniirc.IRC` object or add them as local handlers.
+Handlers are `@-rules` called in their own thread when their respective IRC event(s) is/are received. Handlers may be global (`@miniirc.handler`) or local (`@miniirc.IRC().handler`) to a certain IRC connection. New handlers are added to existing IRC connections automatically since miniirc 0.3.2.
 
 The basic syntax for a handler is as followed, where `*events` is a list of events (`PRIVMSG`, `NOTICE`, etc) are called.
 
@@ -67,7 +67,9 @@ def handler(irc, hostmask, args):
 
 Hostmasks are tuples with the format `('user', 'ident', 'hostname')`. If `ident` and `hostname` aren't sent from the server, they will be filled in with the previous value. If a command is received without a hostmask, all the `hostmask` parameters will be set to the name of the command.
 
-### IRCv3 tags
+### IRCv3 support
+
+#### IRCv3 tags
 
 If you want your handler to support IRCv3 message tags, you need to add
 `ircv3 = True` to the `Handler` at-rule. You will need to add a `tags` parameter
@@ -82,6 +84,28 @@ import miniirc
 @miniirc.Handler(*events, ircv3 = True)
 def handler(irc, hostmask, tags, args):
     pass
+~~~
+
+#### IRCv3 capabilities
+
+You can handle IRCv3 capabilities before connecting using a handler.
+You must use `force = True` on any `irc.quote()` called here, as when this is
+called, miniirc has not yet connected.
+
+~~~py
+import miniirc
+@miniirc.Handler('IRCv3 my-cap-name')
+def handler(irc, hostmask, args):
+    # Process the capability here
+
+    # IRCv3.2 capabilities:
+    #   args = ['my-cap-name', 'IRCv3.2-parameters']
+
+    # IRCv3.1 capabilities:
+    #   args = ['my-cap-name']
+
+    # Remove the capability from the processing list.
+    irc.finish_negotiation(args[0]) # This can also be 'my-cap-name'.
 ~~~
 
 ### Example

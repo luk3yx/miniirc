@@ -8,7 +8,7 @@
 import atexit, copy, threading, socket, ssl, sys
 from time import sleep
 __all__ = ['Handler', 'IRC']
-version = 'miniirc IRC framework v0.3.1'
+version = 'miniirc IRC framework v0.3.2 beta'
 
 # Get the certificate list.
 try:
@@ -38,10 +38,11 @@ def Handler(*events, ircv3 = False):
 
 # Create the IRC class
 class IRC:
-    connected  = False
-    sendq      = None
-    _main_lock = None
-    _sasl      = False
+    connected       = False
+    sendq           = None
+    _main_lock      = None
+    _sasl           = False
+    _unhandled_caps = None
 
     # Debug print()
     def debug(self, *args, **kwargs):
@@ -105,10 +106,9 @@ class IRC:
         self.sock.connect(addrinfo[4])
         if self.ssl and self.verify_ssl:
             ssl.match_hostname(self.sock.getpeercert(), self.ip)
-        # Iterate over the caps list to make it easier to pick up ACKs and NAKs.
-        for cap in self.ircv3_caps:
-            self.debug('Requesting IRCv3 capability', cap)
-            self.quote('CAP', 'REQ', ':' + cap, force = True)
+        # Begin IRCv3 CAP negotiation.
+        self._unhandled_caps = set()
+        self.quote('CAP LS 302', force = True)
         self.quote('USER', self.ident, '0', '*', ':' + self.realname,
             force = True)
         self.quote('NICK', self.nick, force = True)
@@ -127,6 +127,31 @@ class IRC:
             self.sock.shutdown()
         except:
             pass
+
+    # Finish capability negotiation
+    def finish_negotiation(self, cap):
+        if self._unhandled_caps:
+            self._unhandled_caps.remove(cap)
+            irc.debug('Unhandled caps:', self._unhandled_caps)
+            if len(self._unhandled_caps) < 1:
+                irc.debug('Finishing capability negotiation...')
+                self._unhandled_caps = None
+                self.quote('CAP END', force = True)
+
+    # Launch handlers
+    def _launch_handlers(self, cmd, hostmask, tags, args):
+        r = False
+        for handlers in (_global_handlers, self.handlers):
+            if cmd in handlers:
+                for handler in handlers[cmd]:
+                    r = True
+                    params = [self, hostmask, copy.copy(args)]
+                    if hasattr(handler, 'miniirc_ircv3'):
+                        params.insert(2, copy.copy(tags))
+                    t = threading.Thread(target = handler,
+                        args = params)
+                    t.start()
+        return r
 
     # The main loop
     def _main(self):
@@ -202,14 +227,7 @@ class IRC:
                             args.append(i)
 
                     # Launch all handlers for the command
-                    if cmd in self.handlers:
-                        for handler in self.handlers[cmd]:
-                            params = [self, hostmask, copy.copy(args)]
-                            if hasattr(handler, 'miniirc_ircv3'):
-                                params.insert(2, copy.copy(tags))
-                            t = threading.Thread(target = handler,
-                                args = params)
-                            t.start()
+                    self._launch_handlers(cmd, hostmask, tags, args)
 
     # Thread the main loop
     def main(self):
@@ -246,7 +264,7 @@ class IRC:
         self.persist        = persist
         self._debug         = debug
         self.ns_identity    = ns_identity
-        self.ircv3_caps     = set(ircv3_caps or [])
+        self.ircv3_caps     = set(ircv3_caps or ())
         self.connect_modes  = connect_modes
         self.quit_message   = quit_message
         self.verify_ssl     = verify_ssl
@@ -256,7 +274,7 @@ class IRC:
             self.ircv3_caps.add('sasl')
 
         # Add handlers
-        self.handlers       = copy.deepcopy(_global_handlers)
+        self.handlers       = {}
         if ssl == None and port == 6697:
             self.ssl = True
 
@@ -268,6 +286,7 @@ class IRC:
 @Handler('001')
 def _handler(irc, hostmask, args):
     irc.connected = True
+    irc._unhandled_caps = None
     irc.debug('Connected!')
     if irc.connect_modes:
         irc.quote('MODE', irc.nick, irc.connect_modes)
@@ -307,12 +326,38 @@ def _handler(irc, hostmask, args):
     if args[-1].startswith(':\x01VERSION') and args[-1].endswith('\x01'):
         irc.ctcp(hostmask[0], 'VERSION', version, reply = True)
 
-# SASL
+# Handle IRCv3 capabilities
 @Handler('CAP')
 def _handler(irc, hostmask, args):
-    if len(args) < 3 or not irc.ns_identity:
+    if len(args) < 3:
         return
-    elif args[1] == 'ACK' and args[2].replace(':', '', 1).startswith('sasl'):
+    cmd = args[1].upper()
+    irc.debug(cmd, args)
+    if cmd == 'LS' and args[-1].startswith(':'):
+        caps = args[-1][1:].split(' ')
+        req  = set()
+        for raw in caps:
+            cap = raw.split('=', 1)[0].lower()
+            if cap in irc.ircv3_caps:
+                req.add(cap)
+        irc.quote('CAP REQ', ':' + ' '.join(req), force = True)
+    elif args[1] == 'ACK' and args[-1].startswith(':'):
+        caps = args[-1][1:].split(' ')
+        for raw in caps:
+            raw = raw.split('=', 1)
+            cap = raw[0]
+            handled = irc._launch_handlers('IRCV3 ' + cap.upper(),
+                ('CAP', 'CAP', 'CAP'), {}, raw)
+            if not handled:
+                irc.finish_negotiation(cap)
+    elif args[1] == 'NAK':
+        irc._unhandled_caps = None
+        irc.quote('CAP END', force = True)
+
+# SASL
+@Handler('IRCv3 SASL')
+def _handler(irc, hostmask, args):
+    if irc.ns_identity:
         irc.quote('AUTHENTICATE PLAIN', force = True)
 
 @Handler('AUTHENTICATE')
@@ -331,7 +376,6 @@ def _handler(irc, hostmask, args):
 
 @Handler('903', '904', '905')
 def _handler(irc, hostmask, args):
-    if len(irc.ircv3_caps) < 2:
-        irc.quote('CAP END', force = True)
+    irc.finish_negotiation('sasl')
 
 del _handler
