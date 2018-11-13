@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 #
-# miniirc - A small-ish (under 400 lines) IRC framework.
+# miniirc - A small-ish (under 500 lines) IRC framework.
 #
 # © 2018 by luk3yx and other developers of miniirc.
 #
@@ -122,6 +122,7 @@ class IRC:
         self.connected = False
         msg            = msg or self.quit_message
         atexit.unregister(self.disconnect)
+        self._unhandled_caps = None
         try:
             self.quote('QUIT :' + str(msg), force = True)
             self.sock.shutdown()
@@ -132,7 +133,9 @@ class IRC:
     def finish_negotiation(self, cap):
         self.debug('Capability', cap, 'handled.')
         if self._unhandled_caps:
-            self._unhandled_caps.remove(cap)
+            cap = cap.lower()
+            if cap in self._unhandled_caps:
+                del self._unhandled_caps[cap]
             if len(self._unhandled_caps) < 1:
                 self._unhandled_caps = None
                 self.quote('CAP END', force = True)
@@ -268,9 +271,10 @@ class IRC:
         self.quit_message   = quit_message
         self.verify_ssl     = verify_ssl
 
-        # Add SASL
+        # Add IRCv3 capabilities.
         if self.ns_identity:
             self.ircv3_caps.add('sasl')
+        self.ircv3_caps.add('sts')
 
         # Add handlers
         self.handlers       = {}
@@ -335,23 +339,26 @@ def _handler(irc, hostmask, args):
     if cmd == 'LS' and args[-1].startswith(':'):
         caps = args[-1][1:].split(' ')
         req  = set()
-        for raw in caps:
-            cap = raw.split('=', 1)[0].lower()
-            if cap in irc.ircv3_caps:
-                req.add(cap)
-        irc.quote('CAP REQ', ':' + ' '.join(req), force = True)
-    elif args[1] == 'ACK' and args[-1].startswith(':'):
-        caps = args[-1][1:].split(' ')
         if not irc._unhandled_caps:
-            irc._unhandled_caps = set()
+            irc._unhandled_caps = {}
         for raw in caps:
             raw = raw.split('=', 1)
-            cap = raw[0]
-            irc._unhandled_caps.add(cap.lower())
-            handled = irc._launch_handlers('IRCV3 ' + cap.upper(),
-                ('CAP', 'CAP', 'CAP'), {}, raw)
-            if not handled:
-                irc.finish_negotiation(cap)
+            cap = raw[0].lower()
+            if cap in irc.ircv3_caps:
+                irc._unhandled_caps[cap.lower()] = raw
+                req.add(cap)
+        irc.quote('CAP REQ', ':' + ' '.join(req), force = True)
+    elif args[1] == 'ACK':
+        if args[-1].startswith('.'):
+            args[-1] = args[-1][1:]
+        caps = args[-1].split(' ')
+        for cap in caps:
+            cap = cap.lower()
+            if cap in irc._unhandled_caps:
+                handled = irc._launch_handlers('IRCV3 ' + cap.upper(),
+                    ('CAP', 'CAP', 'CAP'), {}, irc._unhandled_caps[cap])
+                if not handled:
+                    irc.finish_negotiation(cap)
     elif args[1] == 'NAK':
         irc._unhandled_caps = None
         irc.quote('CAP END', force = True)
@@ -379,5 +386,32 @@ def _handler(irc, hostmask, args):
 @Handler('903', '904', '905')
 def _handler(irc, hostmask, args):
     irc.finish_negotiation('sasl')
+
+@Handler('IRCv3 STS')
+def _handler(irc, hostmask, args):
+    irc.debug('IRCv3 STS handler called.')
+    if not irc.ssl and len(args) == 2:
+        params = args[-1].split(',')
+        port = None
+        for i in params:
+            n = i.split('=')
+            if len(n) == 2 and n[0] == 'port':
+                port = n[1]
+                break
+        try:
+            port = int(port)
+        except:
+            port = None
+        if port:
+            irc.disconnect()
+            irc.debug('NOTICE: An IRCv3 STS has been detected, the port will',
+                'be changed to', port, 'and SSL will be enabled.')
+            irc.port = port
+            irc.ssl  = True
+            sleep(1)
+            irc.connect()
+            return
+
+    irc.finish_negotiation('sts')
 
 del _handler
