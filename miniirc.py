@@ -8,7 +8,7 @@
 import atexit, copy, threading, socket, ssl, sys
 from time import sleep
 __all__ = ['Handler', 'IRC']
-version = 'miniirc IRC framework v0.3.3'
+version = 'miniirc IRC framework v0.3.4'
 
 # Get the certificate list.
 try:
@@ -347,7 +347,11 @@ def _handler(irc, hostmask, args):
             if cap in irc.ircv3_caps:
                 irc._unhandled_caps[cap.lower()] = raw
                 req.add(cap)
-        irc.quote('CAP REQ', ':' + ' '.join(req), force = True)
+        if len(req) > 0:
+            irc.quote('CAP REQ', ':' + ' '.join(req), force = True)
+        else:
+            irc._unhandled_caps = None
+            irc.quote('CAP END', force = True)
     elif args[1] == 'ACK':
         if args[-1].startswith(':'):
             args[-1] = args[-1][1:]
