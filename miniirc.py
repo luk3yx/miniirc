@@ -8,7 +8,7 @@
 import atexit, copy, threading, socket, ssl, sys
 from time import sleep
 __all__ = ['Handler', 'IRC']
-version = 'miniirc IRC framework v0.3.4'
+version = 'miniirc IRC framework v0.3.5'
 
 # Get the certificate list.
 try:
@@ -407,6 +407,7 @@ def _handler(irc, hostmask, args):
         except:
             port = None
         if port:
+            persist = irc.persist
             irc.disconnect()
             irc.debug('NOTICE: An IRCv3 STS has been detected, the port will',
                 'be changed to', port, 'and SSL will be enabled.')
@@ -414,6 +415,7 @@ def _handler(irc, hostmask, args):
             irc.ssl  = True
             sleep(1)
             irc.connect()
+            irc.persist = persist
             return
 
     irc.finish_negotiation('sts')
