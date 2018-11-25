@@ -7,8 +7,13 @@
 
 import atexit, copy, threading, socket, ssl, sys
 from time import sleep
+
+# The version string
+version = 'miniirc IRC framework v0.3.6'
+
+# __all__ and _default_caps
 __all__ = ['Handler', 'IRC']
-version = 'miniirc IRC framework v0.3.5'
+_default_caps = {'cap-notify', 'server-time', 'sts'}
 
 # Get the certificate list.
 try:
@@ -138,7 +143,8 @@ class IRC:
                 del self._unhandled_caps[cap]
             if len(self._unhandled_caps) < 1:
                 self._unhandled_caps = None
-                self.quote('CAP END', force = True)
+                if not self.connected:
+                    self.quote('CAP END', force = True)
 
     # Launch handlers
     def _launch_handlers(self, cmd, hostmask, tags, args):
@@ -266,7 +272,7 @@ class IRC:
         self.persist        = persist
         self._debug         = debug
         self.ns_identity    = ns_identity
-        self.ircv3_caps     = set(ircv3_caps or ())
+        self.ircv3_caps     = set(ircv3_caps or ()) | _default_caps
         self.connect_modes  = connect_modes
         self.quit_message   = quit_message
         self.verify_ssl     = verify_ssl
@@ -336,7 +342,7 @@ def _handler(irc, hostmask, args):
         return
     cmd = args[1].upper()
     irc.debug(cmd, args)
-    if cmd == 'LS' and args[-1].startswith(':'):
+    if cmd in ('LS', 'NEW') and args[-1].startswith(':'):
         caps = args[-1][1:].split(' ')
         req  = set()
         if not irc._unhandled_caps:
@@ -349,7 +355,7 @@ def _handler(irc, hostmask, args):
                 req.add(cap)
         if len(req) > 0:
             irc.quote('CAP REQ', ':' + ' '.join(req), force = True)
-        else:
+        elif cmd == 'LS' and len(irc._unhandled_caps) == 0 and args[2] != '*':
             irc._unhandled_caps = None
             irc.quote('CAP END', force = True)
     elif args[1] == 'ACK':
