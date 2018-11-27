@@ -34,6 +34,7 @@ irc = miniirc.IRC(ip, port, nick, channels = None, *, ssl = None, ident = None, 
 
 | Function      | Description                                               |
 | ------------- | --------------------------------------------------------  |
+| `change_parser(parser = ...)` | *See the message parser section for documentation.* |
 | `connect()`   | Connects to the IRC server if not already connected.      |
 | `ctcp(target, *msg, reply=False)` | Sends a `CTCP` request or reply to `target`. |
 | `debug(...)`  | Debug, calls `print(...)` if debug mode is on.            |
@@ -106,6 +107,38 @@ def handler(irc, hostmask, args):
 
     # Remove the capability from the processing list.
     irc.finish_negotiation(args[0]) # This can also be 'my-cap-name'.
+~~~
+
+### Custom message parsers
+
+If the IRC server you are connecting to supports a non-standard message syntax, you can
+create custom message parsers. These are called with the raw message (as a `str`) and
+can either return `None` to ignore the message or a 4-tuple (`cmd, hostmask, tags, args`)
+that will then be sent on to the handlers. The items in this 4-tuple should be the same
+type as the items expected by handlers (and `cmd` should be a string).
+
+#### Message parser example
+
+This message parser makes the normal parser allow `~` as an IRCv3 tag prefix character.
+
+~~~
+def parser(msg):
+    if msg.startswith('~'):
+        msg = '@' + msg[1:]
+    return miniirc.ircv3_message_parser(msg)
+~~~
+
+#### Changing message parsers
+
+To change message parsers, you can use `irc.change_parser(func = ...)`. If `func` is not
+specified, it will default to the built-in parser. You can only change message parsers
+on-the-fly (for example in an IRCv3 CAP handler). If you need to change message parsers
+before connecting, you can disable `auto_connect` and change it then.
+
+~~~
+irc = miniirc.IRC(..., auto_connect = False)
+irc.change_parser(my_message_parser)
+irc.connect()
 ~~~
 
 ### Example

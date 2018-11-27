@@ -9,7 +9,7 @@ import atexit, copy, threading, socket, ssl, sys
 from time import sleep
 
 # The version string
-version = 'miniirc IRC framework v0.3.6'
+version = 'miniirc IRC framework v0.3.6/message-parsers'
 
 # __all__ and _default_caps
 __all__ = ['Handler', 'IRC']
@@ -40,6 +40,53 @@ def _add_handler(handlers, events, ircv3):
 
 def Handler(*events, ircv3 = False):
     return _add_handler(_global_handlers, events, ircv3)
+
+# Create the IRCv2/3 parser
+def ircv3_message_parser(msg):
+    n = msg.split(' ')
+
+    # Process IRCv3 tags
+    tags = {}
+    if n[0].startswith('@'):
+        i = n[0][1:].split(';')
+        del n[0]
+        for tag in i:
+            tag = tag.split('=', 1)
+            if len(tag) == 1:
+                tags[tag[0]] = True
+            elif len(tag) == 2:
+                tags[tag[0]] = tag[1]
+
+    # Process arguments
+    if n[0].startswith(':'):
+        while len(n) < 2:
+            n.append('')
+        hostmask = n[0][1:].split('!')
+        if len(hostmask) < 2:
+            hostmask.append(hostmask[0])
+        i = hostmask[1].split('@')
+        if len(i) < 2:
+            i.append(i[0])
+        hostmask = (hostmask[0], i[0], i[1])
+    else:
+        cmd      = n[0].upper()
+        hostmask = (cmd, cmd, cmd)
+        n.insert(0, ':??!??@??')
+
+    # Get the command and arguments
+    cmd  = n[1].upper()
+    args = []
+    c = 1
+    for i in n[2:]:
+        c += 1
+        if i.startswith(':'):
+            args.append(' '.join(n[c:]))
+            break
+        else:
+            args.append(i)
+
+    # Return the parsed data
+    return cmd, hostmask, tags, args
 
 # Create the IRC class
 class IRC:
@@ -146,9 +193,14 @@ class IRC:
                 if not self.connected:
                     self.quote('CAP END', force = True)
 
+    # Change the message parser
+    def change_parser(self, parser = ircv3_message_parser):
+        self._parse = parser
+
     # Launch handlers
-    def _launch_handlers(self, cmd, hostmask, tags, args):
-        r = False
+    def _handle(self, cmd, hostmask, tags, args):
+        r   = False
+        cmd = str(cmd).upper()
         for handlers in (_global_handlers, self.handlers):
             if cmd in handlers:
                 for handler in handlers[cmd]:
@@ -192,50 +244,11 @@ class IRC:
                     line = ''
                 if len(line) > 0:
                     self.debug('<<<', line)
-                    n = line.split(' ')
-
-                    # Process IRCv3 tags
-                    tags = {}
-                    if n[0].startswith('@'):
-                        i = n[0][1:].split(';')
-                        del n[0]
-                        for tag in i:
-                            tag = tag.split('=', 1)
-                            if len(tag) == 1:
-                                tags[tag[0]] = True
-                            elif len(tag) == 2:
-                                tags[tag[0]] = tag[1]
-
-                    # Process arguments
-                    if n[0].startswith(':'):
-                        while len(n) < 2:
-                            n.append('')
-                        hostmask = n[0][1:].split('!')
-                        if len(hostmask) < 2:
-                            hostmask.append(hostmask[0])
-                        i = hostmask[1].split('@')
-                        if len(i) < 2:
-                            i.append(i[0])
-                        hostmask = (hostmask[0], i[0], i[1])
+                    result = self._parse(line)
+                    if type(result) == tuple and len(result) == 4:
+                        self._handle(*result)
                     else:
-                        cmd      = n[0].upper()
-                        hostmask = (cmd, cmd, cmd)
-                        n.insert(0, ':??!??@??')
-
-                    # Get the command and arguments
-                    cmd  = n[1].upper()
-                    args = []
-                    c = 1
-                    for i in n[2:]:
-                        c += 1
-                        if i.startswith(':'):
-                            args.append(' '.join(n[c:]))
-                            break
-                        else:
-                            args.append(i)
-
-                    # Launch all handlers for the command
-                    self._launch_handlers(cmd, hostmask, tags, args)
+                        self.debug('Ignored message:', line)
 
     # Thread the main loop
     def main(self):
@@ -282,7 +295,8 @@ class IRC:
             self.ircv3_caps.add('sasl')
         self.ircv3_caps.add('sts')
 
-        # Add handlers
+        # Add handlers and set the default message parser
+        self.change_parser()
         self.handlers       = {}
         if ssl == None and port == 6697:
             self.ssl = True
@@ -364,8 +378,8 @@ def _handler(irc, hostmask, args):
         caps = args[-1].split(' ')
         for cap in caps:
             cap = cap.lower()
-            if cap in irc._unhandled_caps:
-                handled = irc._launch_handlers('IRCV3 ' + cap.upper(),
+            if irc._unhandled_caps and cap in irc._unhandled_caps:
+                handled = irc._handle('IRCv3 ' + cap,
                     ('CAP', 'CAP', 'CAP'), {}, irc._unhandled_caps[cap])
                 if not handled:
                     irc.finish_negotiation(cap)
