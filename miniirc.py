@@ -68,13 +68,13 @@ def ircv3_message_parser(msg):
         if len(i) < 2:
             i.append(i[0])
         hostmask = (hostmask[0], i[0], i[1])
+        cmd      = n[1]
     else:
-        cmd      = n[0].upper()
+        cmd      = n[0]
         hostmask = (cmd, cmd, cmd)
         n.insert(0, ':??!??@??')
 
     # Get the command and arguments
-    cmd  = n[1].upper()
     args = []
     c = 1
     for i in n[2:]:
