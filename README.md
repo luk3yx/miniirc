@@ -121,8 +121,10 @@ type as the items expected by handlers (and `cmd` should be a string).
 
 This message parser makes the normal parser allow `~` as an IRCv3 tag prefix character.
 
-~~~
-def parser(msg):
+~~~py
+import miniirc
+
+def my_message_parser(msg):
     if msg.startswith('~'):
         msg = '@' + msg[1:]
     return miniirc.ircv3_message_parser(msg)
@@ -135,7 +137,7 @@ specified, it will default to the built-in parser. You can only change message p
 on-the-fly (for example in an IRCv3 CAP handler). If you need to change message parsers
 before connecting, you can disable `auto_connect` and change it then.
 
-~~~
+~~~py
 irc = miniirc.IRC(..., auto_connect = False)
 irc.change_parser(my_message_parser)
 irc.connect()
