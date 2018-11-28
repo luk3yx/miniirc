@@ -9,7 +9,7 @@ import atexit, threading, socket, ssl, sys
 from time import sleep
 
 # The version string
-version = 'miniirc IRC framework v0.3.8'
+version = 'miniirc IRC framework v0.3.9'
 
 # __all__ and _default_caps
 __all__ = ['Handler', 'IRC']
@@ -67,8 +67,6 @@ def ircv3_message_parser(msg):
                             escape = True
                         else:
                             value += char
-                    if escape:
-                        value += '\\'
                 else:
                     value = tag[1]
                 tags[tag[0]] = value
@@ -407,8 +405,13 @@ def _handler(irc, hostmask, args):
 # SASL
 @Handler('IRCv3 SASL')
 def _handler(irc, hostmask, args):
-    if irc.ns_identity:
+    if irc.ns_identity and (len(args) < 2 or 'PLAIN' in
+      args[-1].upper().split(',')):
         irc.quote('AUTHENTICATE PLAIN', force = True)
+    else:
+        irc._sasl = False
+        irc.quote('AUTHENTICATE *', force = True)
+        irc.finish_negotiation('sasl')
 
 @Handler('AUTHENTICATE')
 def _handler(irc, hostmask, args):
@@ -424,7 +427,7 @@ def _handler(irc, hostmask, args):
     irc._sasl = False
     irc.quote('AUTHENTICATE *', force = True)
 
-@Handler('903', '904', '905')
+@Handler('902', '903', '904', '905')
 def _handler(irc, hostmask, args):
     irc.finish_negotiation('sasl')
 
