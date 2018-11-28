@@ -9,7 +9,7 @@ import atexit, threading, socket, ssl, sys
 from time import sleep
 
 # The version string
-version = 'miniirc IRC framework v0.3.6/message-parsers'
+version = 'miniirc IRC framework v0.3.7'
 
 # __all__ and _default_caps
 __all__ = ['Handler', 'IRC']
