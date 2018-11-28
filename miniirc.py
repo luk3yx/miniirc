@@ -5,7 +5,7 @@
 # © 2018 by luk3yx and other developers of miniirc.
 #
 
-import atexit, copy, threading, socket, ssl, sys
+import atexit, threading, socket, ssl, sys
 from time import sleep
 
 # The version string
@@ -199,15 +199,16 @@ class IRC:
 
     # Launch handlers
     def _handle(self, cmd, hostmask, tags, args):
-        r   = False
-        cmd = str(cmd).upper()
+        r        = False
+        cmd      = str(cmd).upper()
+        hostmask = tuple(hostmask)
         for handlers in (_global_handlers, self.handlers):
             if cmd in handlers:
                 for handler in handlers[cmd]:
                     r = True
-                    params = [self, hostmask, copy.copy(args)]
+                    params = [self, hostmask, list(args)]
                     if hasattr(handler, 'miniirc_ircv3'):
-                        params.insert(2, copy.copy(tags))
+                        params.insert(2, dict(tags))
                     t = threading.Thread(target = handler,
                         args = params)
                     t.start()
