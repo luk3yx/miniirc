@@ -9,7 +9,7 @@ import atexit, threading, socket, ssl, sys
 from time import sleep
 
 # The version string
-version = 'miniirc IRC framework v0.3.7'
+version = 'miniirc IRC framework v0.3.8'
 
 # __all__ and _default_caps
 __all__ = ['Handler', 'IRC']
@@ -55,7 +55,23 @@ def ircv3_message_parser(msg):
             if len(tag) == 1:
                 tags[tag[0]] = True
             elif len(tag) == 2:
-                tags[tag[0]] = tag[1]
+                if '\\' in tag[1]: # Iteration is bad, only do it if required.
+                    value  = ''
+                    escape = False
+                    values = {':': ';', 's': ' ', 'r': '\r', 'n': '\n'}
+                    for char in tag[1]: # TODO: Remove this iteration.
+                        if escape:
+                            value += values.get(char) or char
+                            escape = False
+                        elif char == '\\':
+                            escape = True
+                        else:
+                            value += char
+                    if escape:
+                        value += '\\'
+                else:
+                    value = tag[1]
+                tags[tag[0]] = value
 
     # Process arguments
     if n[0].startswith(':'):
