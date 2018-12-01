@@ -1,6 +1,6 @@
 # miniirc
 
-[![Available on PyPI.](https://img.shields.io/pypi/v/miniirc.svg)](https://pypi.org/project/miniirc/) [![Maintainability](https://api.codeclimate.com/v1/badges/22b7784b82dea11bba1d/maintainability)](https://codeclimate.com/github/luk3yx/miniirc/maintainability)
+[![Available on PyPI.](https://img.shields.io/pypi/v/miniirc.svg)](https://pypi.org/project/miniirc/) [![Code Climate](https://api.codeclimate.com/v1/badges/22b7784b82dea11bba1d/maintainability)](https://codeclimate.com/github/luk3yx/miniirc/maintainability)
 
 A simple IRC client framework.
 
