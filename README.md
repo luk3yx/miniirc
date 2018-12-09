@@ -18,7 +18,7 @@ irc = miniirc.IRC(ip, port, nick, channels = None, *, ssl = None, ident = None, 
 | `port`        | The port to connect to.                                   |
 | `nick`        | The nickname of the bot.                                  |
 | `channels`    | The channels to join on connect.                          |
-| `ssl`         | Enable SSL. If `None`, SSL is disabled unless the port is `6697`. |
+| `ssl`         | Enable TLS/SSL. If `None`, TLS/SSL is disabled unless the port is `6697`. |
 | `ident`       | The ident to use, defaults to `nick`.                     |
 | `realname`    | The realname to use, defaults to `nick` as well.          |
 | `persist`     | Whether to automatically reconnect.                       |
@@ -28,7 +28,7 @@ irc = miniirc.IRC(ip, port, nick, channels = None, *, ssl = None, ident = None, 
 | `ircv3_caps`  | A set() of IRCv3 capabilities to request. SASL is auto-added if `ns_identity` is specified. |
 | `connect_modes` | A mode string (for example `'+B'`) of UMODEs to set when connected. |
 | `quit_message`| Sets the default quit message. This can be modified per-quit with `irc.disconnect()`. |
-| `verify_ssl`  | Verifies SSL certificates. Disabling this is not recommended. If you have trouble with SSL certificate verification, try running `pip3 install certifi` first. |
+| `verify_ssl`  | Verifies TLS/SSL certificates. Disabling this is not recommended. If you have trouble with certificate verification, try running `pip3 install certifi` first. |
 
 ## Functions
 

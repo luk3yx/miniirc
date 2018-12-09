@@ -9,7 +9,7 @@ import atexit, threading, socket, ssl, sys
 from time import sleep
 
 # The version string
-version = 'miniirc IRC framework v0.3.9'
+version = 'miniirc IRC framework v0.3.10'
 
 # __all__ and _default_caps
 __all__ = ['Handler', 'IRC']
@@ -126,7 +126,7 @@ class IRC:
                     self.quote(*i)
             msg = ' '.join(msg).replace('\r', ' ').replace('\n', ' ').encode(
                 'utf-8')[:510] + b'\r\n'
-            self.sock.send(msg)
+            self.sock.sendall(msg)
         else:
             self.debug('>Q>', *msg)
             if not self.sendq:
@@ -346,6 +346,8 @@ def _handler(irc, hostmask, args):
             return int(irc.nick[0])
         except:
             pass
+        if len(irc.nick) > 20:
+            return
         print('WARNING: The requested nickname', repr(irc.nick), 'is invalid or'
             ' already in use. Trying again with', repr(irc.nick + '_') + '...',
             file=sys.stderr)
@@ -433,7 +435,6 @@ def _handler(irc, hostmask, args):
 
 @Handler('IRCv3 STS')
 def _handler(irc, hostmask, args):
-    irc.debug('IRCv3 STS handler called.')
     if not irc.ssl and len(args) == 2:
         params = args[-1].split(',')
         port = None
@@ -450,7 +451,7 @@ def _handler(irc, hostmask, args):
             persist = irc.persist
             irc.disconnect()
             irc.debug('NOTICE: An IRCv3 STS has been detected, the port will',
-                'be changed to', port, 'and SSL will be enabled.')
+                'be changed to', port, 'and TLS/SSL will be enabled.')
             irc.port = port
             irc.ssl  = True
             sleep(1)
