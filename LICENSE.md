@@ -1,7 +1,7 @@
 
 The MIT License (MIT)
 
-Copyright © 2018 by luk3yx and otehr developers of miniirc
+Copyright © 2018 by luk3yx and other developers of miniirc
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
