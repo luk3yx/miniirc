@@ -44,7 +44,8 @@ irc = miniirc.IRC(ip, port, nick, channels = None, *, ssl = None, ident = None, 
 | `me(target, *msg)`          | Sends a `/me` (`CTCP ACTION`) to `target`.  |
 | `msg(target, *msg)`         | Sends a `PRIVMSG` to `target`.              |
 | `notice(target, *msg)`      | Sends a `NOTICE` to `target`.               |
-| `quote(*msg, force=None)` | Sends a raw message to IRC, use `force=True` to send while disconnected. Do not send multiple commands in one `irc.quote()`, as the newlines will be stripped and it will be sent as one command. |
+| `quote(*msg, force=None)`   | Sends a raw message to IRC, use `force=True` to send while disconnected. Do not send multiple commands in one `irc.quote()`, as the newlines will be stripped and it will be sent as one command. |
+|`nick(new_nick)`             | Sends a `/nick` to irc server               |
 
 ## Handlers
 
