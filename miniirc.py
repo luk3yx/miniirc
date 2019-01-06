@@ -9,7 +9,7 @@ import atexit, threading, socket, ssl, sys
 from time import sleep
 
 # The version string
-version = 'miniirc IRC framework v0.3.10'
+version = 'miniirc IRC framework v0.3.11'
 
 # __all__ and _default_caps
 __all__ = ['Handler', 'IRC']
@@ -105,6 +105,7 @@ def ircv3_message_parser(msg):
 # Create the IRC class
 class IRC:
     connected       = False
+    debug_file      = sys.stdout
     sendq           = None
     _main_lock      = None
     _sasl           = False
@@ -112,8 +113,10 @@ class IRC:
 
     # Debug print()
     def debug(self, *args, **kwargs):
-        if self._debug:
-            print(*args, **kwargs)
+        if self.debug_file:
+            print(*args, **kwargs, file = self.debug_file)
+            if hasattr(self.debug_file, 'flush'):
+                self.debug_file.flush()
 
     # Send raw messages
     def quote(self, *msg, force = None):
@@ -298,12 +301,17 @@ class IRC:
         self.realname       = realname or nick
         self.ssl            = ssl
         self.persist        = persist
-        self._debug         = debug
         self.ns_identity    = ns_identity
         self.ircv3_caps     = set(ircv3_caps or ()) | _default_caps
         self.connect_modes  = connect_modes
         self.quit_message   = quit_message
         self.verify_ssl     = verify_ssl
+
+        # Set the debug file
+        if not debug:
+            self.debug_file = None
+        elif hasattr(debug, 'write'):
+            self.debug_file = debug
 
         # Add IRCv3 capabilities.
         if self.ns_identity:
