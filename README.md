@@ -34,6 +34,7 @@ irc = miniirc.IRC(ip, port, nick, channels = None, *, ssl = None, ident = None, 
 
 | Function      | Description                                               |
 | ------------- | --------------------------------------------------------  |
+| `change_nick(new_nick)`            | Sends a `NICK` to irc server |
 | `change_parser(parser = ...)` | *See the message parser section for documentation.* |
 | `connect()`   | Connects to the IRC server if not already connected.      |
 | `ctcp(target, *msg, reply=False)` | Sends a `CTCP` request or reply to `target`. |
@@ -42,10 +43,9 @@ irc = miniirc.IRC(ip, port, nick, channels = None, *, ssl = None, ident = None, 
 | `Hander(...)` | An event handler, see [Handlers](#handlers) for more info.|
 | `main()`      | Starts the main loop in a thread if not already running.  |
 | `me(target, *msg)`          | Sends a `/me` (`CTCP ACTION`) to `target`.  |
-| `msg(target, *msg)`         | Sends a `PRIVMSG` to `target`.              |
+| `msg(target, *msg)` | Sends a `PRIVMSG` to `target`.              |
 | `notice(target, *msg)`      | Sends a `NOTICE` to `target`.               |
 | `quote(*msg, force=None)` | Sends a raw message to IRC, use `force=True` to send while disconnected. Do not send multiple commands in one `irc.quote()`, as the newlines will be stripped and it will be sent as one command. |
-| `nick(new_nick)`            | Sends a `/nick` to irc server |
 
 ## Handlers
 
