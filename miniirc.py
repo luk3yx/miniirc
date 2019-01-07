@@ -147,7 +147,7 @@ class IRC:
     def me(self, target, *msg):
         return self.ctcp(target, 'ACTION', *msg)
     
-    def nick(new_nick):
+    def change_nick(new_nick):
         return self.quote('NICK', new_nick)
 
     # Allow per-connection handlers
