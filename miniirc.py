@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 #
-# miniirc - A small-ish (under 500 lines) IRC framework.
+# miniirc - A small-ish backwards-compatible IRC framework.
 #
 # © 2018 by luk3yx and other developers of miniirc.
 #
@@ -9,12 +9,12 @@ import atexit, threading, socket, ssl, sys
 from time import sleep
 
 # The version string and tuple
-ver     = (0,3,12)
-version = 'miniirc IRC framework v0.3.12'
+ver     = (1,0,0)
+version = 'miniirc IRC framework v1.0.0'
 
 # __all__ and _default_caps
 __all__ = ['Handler', 'IRC']
-_default_caps = {'cap-notify', 'server-time', 'sts'}
+_default_caps = {'cap-notify', 'draft/message-tags-0.2', 'server-time', 'sts'}
 
 # Get the certificate list.
 try:
@@ -43,6 +43,7 @@ def Handler(*events, ircv3 = False):
     return _add_handler(_global_handlers, events, ircv3)
 
 # Create the IRCv2/3 parser
+ircv3_tag_escapes = {':': ';', 's': ' ', 'r': '\r', 'n': '\n'}
 def ircv3_message_parser(msg):
     n = msg.split(' ')
 
@@ -59,10 +60,9 @@ def ircv3_message_parser(msg):
                 if '\\' in tag[1]: # Iteration is bad, only do it if required.
                     value  = ''
                     escape = False
-                    values = {':': ';', 's': ' ', 'r': '\r', 'n': '\n'}
                     for char in tag[1]: # TODO: Remove this iteration.
                         if escape:
-                            value += values.get(char) or char
+                            value += ircv3_tag_escapes.get(char) or char
                             escape = False
                         elif char == '\\':
                             escape = True
@@ -103,9 +103,24 @@ def ircv3_message_parser(msg):
     # Return the parsed data
     return cmd, hostmask, tags, args
 
+# Convert a dict into an IRCv3 tags string
+def _dict_to_tags(tags, all_tags = True):
+    res = '@'
+    for tag in tags:
+        if all_tags or tag.startswith('+'):
+            tag   = str(tag).replace('\\', '\\\\').replace('=', '-')
+            value = str(tags[tag]).replace('\\', '\\\\')
+            for i in ircv3_tag_escapes:
+                tag   =   tag.replace(ircv3_tag_escapes[i], '\\' + i)
+                value = value.replace(ircv3_tag_escapes[i], '\\' + i)
+            res += tag + '=' + value + ';'
+    if len(res) < 3:
+        return ''
+    return res[:-1] + ' '
+
 # Create the IRC class
 class IRC:
-    connected       = False
+    connected       = None
     debug_file      = sys.stdout
     sendq           = None
     _main_lock      = None
@@ -120,36 +135,45 @@ class IRC:
                 self.debug_file.flush()
 
     # Send raw messages
-    def quote(self, *msg, force = None):
+    def quote(self, *msg, force = None, tags = None):
+        if not tags and len(msg) > 0 and type(msg[0]) == dict:
+            tags = msg[0]
+            msg  = msg[1:]
+        if type(tags) != dict or \
+          'draft/message-tags-0.2' not in self.active_caps:
+            tags = None
         if self.connected or force:
-            self.debug('>>>', *msg)
+            self.debug('>3> ' + str(tags) if tags else '>>>', *msg)
             if self.sendq and self.connected:
-                sendq      = self.sendq
-                self.sendq = None
+                sendq, self.sendq = self.sendq, None
                 for i in sendq:
                     self.quote(*i)
             msg = ' '.join(msg).replace('\r', ' ').replace('\n', ' ').encode(
-                'utf-8')[:510] + b'\r\n'
-            self.sock.sendall(msg)
+                'utf-8')[:510]
+            if tags and len(tags) > 0:
+                msg = _dict_to_tags(tags, False).encode('utf-8')[:4095] + msg
+            self.sock.sendall(msg + b'\r\n')
         else:
             self.debug('>Q>', *msg)
             if not self.sendq:
                 self.sendq = []
+            if tags:
+                msg = (tags,) + msg
             self.sendq.append(msg)
 
     # User-friendly msg, notice, and ctcp functions.
-    def msg(self, target, *msg):
-        return self.quote('PRIVMSG', str(target), ':' + ' '.join(msg))
+    def msg(self, target, *msg, tags = None):
+        self.quote('PRIVMSG', str(target), ':' + ' '.join(msg), tags = tags)
 
-    def notice(self, target, *msg):
-        return self.quote('NOTICE',  str(target), ':' + ' '.join(msg))
+    def notice(self, target, *msg, tags = None):
+        self.quote('NOTICE',  str(target), ':' + ' '.join(msg), tags = tags)
 
-    def ctcp(self, target, *msg, reply = False):
+    def ctcp(self, target, *msg, reply = False, tags = None):
         m = (self.notice if reply else self.msg)
-        return m(target, '\x01{}\x01'.format(' '.join(msg)))
+        return m(target, '\x01{}\x01'.format(' '.join(msg)), tags = tags)
 
-    def me(self, target, *msg):
-        return self.ctcp(target, 'ACTION', *msg)
+    def me(self, target, *msg, tags = None):
+        return self.ctcp(target, 'ACTION', *msg, tags = tags)
 
     # Allow per-connection handlers
     def Handler(self, *events, ircv3 = False):
@@ -157,9 +181,10 @@ class IRC:
 
     # The connect function
     def connect(self):
-        if self.connected:
+        if self.connected != None:
             self.debug('Already connected!')
             return
+        self.connected = False
         self.debug('Connecting to', self.ip, 'port', self.port)
         addrinfo  = socket.getaddrinfo(self.ip, self.port, 0,
             socket.SOCK_STREAM)[0]
@@ -189,7 +214,7 @@ class IRC:
     # An easier way to disconnect
     def disconnect(self, msg = None, *, auto_reconnect = False):
         self.persist   = auto_reconnect and self.persist
-        self.connected = False
+        self.connected = None
         msg            = msg or self.quit_message
         atexit.unregister(self.disconnect)
         self._unhandled_caps = None
@@ -297,13 +322,14 @@ class IRC:
         self.ip             = ip
         self.port           = int(port)
         self.nick           = nick
-        self.channels       = channels or ()
+        self.channels       = set(channels or ())
         self.ident          = ident    or nick
         self.realname       = realname or nick
         self.ssl            = ssl
         self.persist        = persist
         self.ns_identity    = ns_identity
         self.ircv3_caps     = set(ircv3_caps or ()) | _default_caps
+        self.active_caps    = set()
         self.connect_modes  = connect_modes
         self.quit_message   = quit_message
         self.verify_ssl     = verify_ssl
@@ -404,6 +430,7 @@ def _handler(irc, hostmask, args):
         caps = args[-1].split(' ')
         for cap in caps:
             cap = cap.lower()
+            irc.active_caps.add(cap)
             if irc._unhandled_caps and cap in irc._unhandled_caps:
                 handled = irc._handle('IRCv3 ' + cap,
                     ('CAP', 'CAP', 'CAP'), {}, irc._unhandled_caps[cap])
