@@ -22,7 +22,7 @@ irc = miniirc.IRC(ip, port, nick, channels = None, *, ssl = None, ident = None, 
 | `ident`       | The ident to use, defaults to `nick`.                     |
 | `realname`    | The realname to use, defaults to `nick` as well.          |
 | `persist`     | Whether to automatically reconnect.                       |
-| `debug`       | Enables debug mode, prints all IRC messages.              |
+| `debug`       | Enables debug mode, prints all IRC messages. This can also be a file object (with write mode enabled) if you want debug messages to be written into a file instead of being printed to stdout. |
 | `ns_identity` | The NickServ account to use (`<user> <password>`).        |
 | `auto_connect`| Runs `.connect()` straight away.                          |
 | `ircv3_caps`  | A set() of IRCv3 capabilities to request. SASL is auto-added if `ns_identity` is specified. |
@@ -37,15 +37,15 @@ irc = miniirc.IRC(ip, port, nick, channels = None, *, ssl = None, ident = None, 
 | `change_nick(self, new_nick)`            | Sends a `NICK` to irc server |
 | `change_parser(parser = ...)` | *See the message parser section for documentation.* |
 | `connect()`   | Connects to the IRC server if not already connected.      |
-| `ctcp(target, *msg, reply=False)` | Sends a `CTCP` request or reply to `target`. |
+| `ctcp(target, *msg, reply=False, tags=None)` | Sends a `CTCP` request or reply to `target`. |
 | `debug(...)`  | Debug, calls `print(...)` if debug mode is on.            |
 | `disconnect(msg = ..., *, auto_reconnect = False)`| Disconnects from the IRC server. `auto_reconnect` will be overriden by `self.persist` if set to `True`. |
 | `Hander(...)` | An event handler, see [Handlers](#handlers) for more info.|
 | `main()`      | Starts the main loop in a thread if not already running.  |
-| `me(target, *msg)`          | Sends a `/me` (`CTCP ACTION`) to `target`.  |
-| `msg(target, *msg)`         | Sends a `PRIVMSG` to `target`.              |
-| `notice(target, *msg)`      | Sends a `NOTICE` to `target`.               |
-| `quote(*msg, force=None)` | Sends a raw message to IRC, use `force=True` to send while disconnected. Do not send multiple commands in one `irc.quote()`, as the newlines will be stripped and it will be sent as one command. |
+| `me(target, *msg, tags=Noen)`        | Sends a `/me` (`CTCP ACTION`) to `target`.  |
+| `msg(target, *msg, tags=None)`       | Sends a `PRIVMSG` to `target`.              |
+| `notice(target, *msg, tags=None)`    | Sends a `NOTICE` to `target`.               |
+| `quote(*msg, force=None, tags=None)` | Sends a raw message to IRC, use `force=True` to send while disconnected. Do not send multiple commands in one `irc.quote()`, as the newlines will be stripped and it will be sent as one command. The `tags` parameter optionally allows you to add a `dict` with IRCv3 client tags (all starting in `+`), and will not be sent to IRC servers that do not support client tags. |
 
 ## Handlers
 
@@ -154,6 +154,17 @@ def handler(irc, hostmask, args):
 ~~~
 
 This will print a line whenever the bot gets a `PRIVMSG` or `NOTICE`.
+
+## Misc functions
+
+miniirc provides the following helper functions:
+
+| Name                          | Description                               |
+| ----------------------------- | ----------------------------------------- |
+| `miniirc.get_ca_certs()`      | Runs `certifi.where()` if `certifi` is installed, otherwise returns `None`. |
+| `miniirc.ircv3_message_parser(msg)` | The default IRCv2/IRCv3 message parser, returns `cmd, hostmask, tags, args`. |
+| `miniirc.ver`                 | A tuple containing version information.   |
+| `miniirc.version`             | The `CTCP VERSION` reply, can be changed. |
 
 ## Working examples/implementations
 
