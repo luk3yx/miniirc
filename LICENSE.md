@@ -1,7 +1,7 @@
 
 # The MIT License (MIT)
 
-*Copyright © 2019 by luk3yx and [other contributors of miniirc](https://github.com/luk3yx/miniirc/graphs/contributors).*
+Copyright © 2019 by luk3yx and [other contributors of miniirc](https://github.com/luk3yx/miniirc/graphs/contributors).
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
