@@ -9,8 +9,8 @@ import atexit, threading, socket, ssl, sys
 from time import sleep
 
 # The version string and tuple
-ver     = (1,0,0)
-version = 'miniirc IRC framework v1.0.0'
+ver     = (1,0,1)
+version = 'miniirc IRC framework v1.0.1'
 
 # __all__ and _default_caps
 __all__ = ['Handler', 'IRC']
@@ -103,17 +103,23 @@ def ircv3_message_parser(msg):
     # Return the parsed data
     return cmd, hostmask, tags, args
 
+# Escape tags
+def _escape_tag(tag):
+    tag = str(tag).replace('\\', '\\\\')
+    for i in ircv3_tag_escapes:
+        tag = tag.replace(ircv3_tag_escapes[i], '\\' + i)
+    return tag
+
 # Convert a dict into an IRCv3 tags string
 def _dict_to_tags(tags, all_tags = True):
     res = '@'
     for tag in tags:
         if all_tags or tag.startswith('+'):
-            tag   = str(tag).replace('\\', '\\\\').replace('=', '-')
-            value = str(tags[tag]).replace('\\', '\\\\')
-            for i in ircv3_tag_escapes:
-                tag   =   tag.replace(ircv3_tag_escapes[i], '\\' + i)
-                value = value.replace(ircv3_tag_escapes[i], '\\' + i)
-            res += tag + '=' + value + ';'
+            etag = _escape_tag(tag).replace('=', '-')
+            if type(tags[tag]) == str:
+                res += etag + '=' + _escape_tag(tags[tag]) + ';'
+            elif tags[tag]:
+                res += etag + ';'
     if len(res) < 3:
         return ''
     return res[:-1] + ' '
