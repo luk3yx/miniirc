@@ -167,7 +167,8 @@ miniirc provides the following helper functions:
 
 The version numbering system should be similar to [SemVer](https://semver.org/),
 however backwards compatibility is preserved where possible when major releases
-change.
+change. Patch version numbers can and will increase quickly, as miniirc is (at
+the time of writing this) under active development.
 
 ## Working examples/implementations
 

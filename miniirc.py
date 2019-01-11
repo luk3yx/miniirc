@@ -9,8 +9,8 @@ import atexit, threading, socket, ssl, sys
 from time import sleep
 
 # The version string and tuple
-ver     = (1,0,2)
-version = 'miniirc IRC framework v1.0.2'
+ver     = (1,0,3)
+version = 'miniirc IRC framework v1.0.3'
 
 # __all__ and _default_caps
 __all__ = ['Handler', 'IRC']
@@ -112,16 +112,19 @@ def _escape_tag(tag):
 
 # Convert a dict into an IRCv3 tags string
 def _dict_to_tags(tags):
-    res = '@'
+    res = b'@'
     for tag in tags:
-        etag = _escape_tag(tag).replace('=', '-')
-        if type(tags[tag]) == str:
-            res += etag + '=' + _escape_tag(tags[tag]) + ';'
-        elif tags[tag]:
-            res += etag + ';'
+        if tags[tag]:
+            etag = _escape_tag(tag).replace('=', '-')
+            if type(tags[tag]) == str:
+                etag += '=' + _escape_tag(tags[tag]) + ';'
+            etag = (etag + ';').encode('utf-8')
+            if len(res) + len(etag) > 4095:
+                break
+            res += etag
     if len(res) < 3:
-        return ''
-    return res[:-1] + ' '
+        return b''
+    return res[:-1] + b' '
 
 # Create the IRC class
 class IRC:
@@ -156,7 +159,7 @@ class IRC:
             msg = ' '.join(msg).replace('\r', ' ').replace('\n', ' ').encode(
                 'utf-8')[:510]
             if tags and len(tags) > 0:
-                msg = _dict_to_tags(tags).encode('utf-8')[:4095] + msg
+                msg = _dict_to_tags(tags) + msg
             self.sock.sendall(msg + b'\r\n')
         else:
             self.debug('>Q>', *msg)
