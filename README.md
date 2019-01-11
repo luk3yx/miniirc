@@ -165,6 +165,10 @@ miniirc provides the following helper functions:
 | `miniirc.ver`                 | A tuple containing version information.   |
 | `miniirc.version`             | The `CTCP VERSION` reply, can be changed. |
 
+The version numbering system should be similar to [SemVer](https://semver.org/),
+however backwards compatibility is preserved where possible when major releases
+change.
+
 ## Working examples/implementations
 
 There is a working example and stdinbot (dumps stdin to an IRC channel) on
