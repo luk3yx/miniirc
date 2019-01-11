@@ -9,8 +9,8 @@ import atexit, threading, socket, ssl, sys
 from time import sleep
 
 # The version string and tuple
-ver     = (1,0,3)
-version = 'miniirc IRC framework v1.0.3'
+ver     = (1,0,4)
+version = 'miniirc IRC framework v1.0.4'
 
 # __all__ and _default_caps
 __all__ = ['Handler', 'IRC']
@@ -265,6 +265,16 @@ class IRC:
                     t.start()
         return r
 
+    # Launch IRCv3 handlers
+    def _handle_cap(self, cap):
+        cap = cap.lower()
+        self.active_caps.add(cap)
+        if self._unhandled_caps and cap in self._unhandled_caps:
+            handled = self._handle('IRCv3 ' + cap,
+                ('CAP', 'CAP', 'CAP'), {}, self._unhandled_caps[cap])
+            if not handled:
+                self.finish_negotiation(cap)
+
     # The main loop
     def _main(self):
         self.debug('Main loop running!')
@@ -349,9 +359,7 @@ class IRC:
             self.debug_file = debug
 
         # Add IRCv3 capabilities.
-        if self.ns_identity:
-            self.ircv3_caps.add('sasl')
-        self.ircv3_caps.add('sts')
+        if self.ns_identity:    self.ircv3_caps.add('sasl')
 
         # Add handlers and set the default message parser
         self.change_parser()
@@ -415,7 +423,6 @@ def _handler(irc, hostmask, args):
     if len(args) < 3:
         return
     cmd = args[1].upper()
-    irc.debug(cmd, args)
     if cmd in ('LS', 'NEW') and args[-1].startswith(':'):
         caps = args[-1][1:].split(' ')
         req  = set()
@@ -425,8 +432,11 @@ def _handler(irc, hostmask, args):
             raw = raw.split('=', 1)
             cap = raw[0].lower()
             if cap in irc.ircv3_caps:
-                irc._unhandled_caps[cap.lower()] = raw
-                req.add(cap)
+                irc._unhandled_caps[cap] = raw
+                if cap == 'sts':
+                    irc._handle_cap(cap)
+                else:
+                    req.add(cap)
         if len(req) > 0:
             irc.quote('CAP REQ', ':' + ' '.join(req), force = True)
         elif cmd == 'LS' and len(irc._unhandled_caps) == 0 and args[2] != '*':
@@ -437,13 +447,7 @@ def _handler(irc, hostmask, args):
             args[-1] = args[-1][1:]
         caps = args[-1].split(' ')
         for cap in caps:
-            cap = cap.lower()
-            irc.active_caps.add(cap)
-            if irc._unhandled_caps and cap in irc._unhandled_caps:
-                handled = irc._handle('IRCv3 ' + cap,
-                    ('CAP', 'CAP', 'CAP'), {}, irc._unhandled_caps[cap])
-                if not handled:
-                    irc.finish_negotiation(cap)
+            irc._handle_cap(cap)
     elif args[1] == 'NAK':
         irc._unhandled_caps = None
         irc.quote('CAP END', force = True)
