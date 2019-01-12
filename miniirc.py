@@ -9,12 +9,13 @@ import atexit, threading, socket, ssl, sys
 from time import sleep
 
 # The version string and tuple
-ver     = (1,0,4)
-version = 'miniirc IRC framework v1.0.4'
+ver     = (1,0,5)
+version = 'miniirc IRC framework v1.0.5'
 
 # __all__ and _default_caps
 __all__ = ['Handler', 'IRC']
-_default_caps = {'cap-notify', 'draft/message-tags-0.2', 'server-time', 'sts'}
+_default_caps = {'account-tag', 'cap-notify', 'chghost',
+    'draft/message-tags-0.2', 'invite-notify', 'server-time', 'sts'}
 
 # Get the certificate list.
 try:
@@ -442,15 +443,20 @@ def _handler(irc, hostmask, args):
         elif cmd == 'LS' and len(irc._unhandled_caps) == 0 and args[2] != '*':
             irc._unhandled_caps = None
             irc.quote('CAP END', force = True)
-    elif args[1] == 'ACK':
+    elif cmd == 'ACK':
         if args[-1].startswith(':'):
             args[-1] = args[-1][1:]
         caps = args[-1].split(' ')
         for cap in caps:
             irc._handle_cap(cap)
-    elif args[1] == 'NAK':
+    elif cmd == 'NAK':
         irc._unhandled_caps = None
         irc.quote('CAP END', force = True)
+    elif cmd == 'DEL':
+        for cap in args[-1][1:].split(' '):
+            cap = cap.lower()
+            if cap in irc.active_caps:
+                irc.active_caps.remove(cap)
 
 # SASL
 @Handler('IRCv3 SASL')
