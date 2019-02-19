@@ -7,10 +7,11 @@ with open('README.md', 'r') as f:
 
 setup(
     name        = 'miniirc',
-    version     = '1.0.5',
+    version     = '1.0.6',
     py_modules  = ['miniirc'],
     author      = 'luk3yx',
     description = 'A lightweight IRC framework.',
+    url         = 'https://github.com/luk3yx/miniirc',
     license     = 'MIT',
 
     long_description              = desc,

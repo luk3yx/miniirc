@@ -9,8 +9,8 @@ import atexit, threading, socket, ssl, sys
 from time import sleep
 
 # The version string and tuple
-ver     = (1,0,5)
-version = 'miniirc IRC framework v1.0.5'
+ver     = (1,0,6)
+version = 'miniirc IRC framework v1.0.6'
 
 # __all__ and _default_caps
 __all__ = ['Handler', 'IRC']
