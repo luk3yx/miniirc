@@ -9,8 +9,8 @@ import atexit, threading, socket, ssl, sys
 from time import sleep
 
 # The version string and tuple
-ver     = (1,0,7)
-version = 'miniirc IRC framework v1.0.7'
+ver     = (1,0,8)
+version = 'miniirc IRC framework v1.0.8'
 
 # __all__ and _default_caps
 __all__ = ['Handler', 'IRC']
@@ -365,7 +365,7 @@ class IRC:
         # Add handlers and set the default message parser
         self.change_parser()
         self.handlers       = {}
-        if ssl == None and port == 6697:
+        if ssl == None and self.port == 6697:
             self.ssl = True
 
         # Start the connection
