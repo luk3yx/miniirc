@@ -9,13 +9,14 @@ import atexit, threading, socket, ssl, sys
 from time import sleep
 
 # The version string and tuple
-ver     = (1,0,8)
-version = 'miniirc IRC framework v1.0.8'
+ver     = (1,0,9)
+version = 'miniirc IRC framework v1.0.9'
 
 # __all__ and _default_caps
 __all__ = ['Handler', 'IRC']
 _default_caps = {'account-tag', 'cap-notify', 'chghost',
-    'draft/message-tags-0.2', 'invite-notify', 'server-time', 'sts'}
+    'draft/message-tags-0.2', 'invite-notify', 'message-tags', 'server-time',
+    'sts'}
 
 # Get the certificate list.
 try:
@@ -148,7 +149,7 @@ class IRC:
         if not tags and len(msg) > 0 and type(msg[0]) == dict:
             tags = msg[0]
             msg  = msg[1:]
-        if type(tags) != dict or \
+        if type(tags) != dict or 'message-tags' not in self.active_caps or \
           'draft/message-tags-0.2' not in self.active_caps:
             tags = None
         if self.connected or force:
