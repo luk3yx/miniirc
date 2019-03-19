@@ -9,8 +9,8 @@ import atexit, threading, socket, ssl, sys
 from time import sleep
 
 # The version string and tuple
-ver     = (1,0,9)
-version = 'miniirc IRC framework v1.0.9'
+ver     = (1,0,10)
+version = 'miniirc IRC framework v1.0.10'
 
 # __all__ and _default_caps
 __all__ = ['Handler', 'IRC']
@@ -44,35 +44,42 @@ def _add_handler(handlers, events, ircv3):
 def Handler(*events, ircv3 = False):
     return _add_handler(_global_handlers, events, ircv3)
 
-# Create the IRCv2/3 parser
+# Parse IRCv3 tags
 ircv3_tag_escapes = {':': ';', 's': ' ', 'r': '\r', 'n': '\n'}
+def _tags_to_dict(tag_string, separator = ';'):
+    tags = {}
+    for tag in tag_string.split(separator):
+        tag = tag.split('=', 1)
+        if len(tag) == 1:
+            tags[tag[0]] = True
+        elif len(tag) == 2:
+            if '\\' in tag[1]: # Iteration is bad, only do it if required.
+                value  = ''
+                escape = False
+                for char in tag[1]: # TODO: Remove this iteration.
+                    if escape:
+                        value += ircv3_tag_escapes.get(char, char)
+                        escape = False
+                    elif char == '\\':
+                        escape = True
+                    else:
+                        value += char
+            else:
+                value = tag[1]
+            tags[tag[0]] = value
+
+    return tags
+
+# Create the IRCv2/3 parser
 def ircv3_message_parser(msg):
     n = msg.split(' ')
 
     # Process IRCv3 tags
-    tags = {}
     if n[0].startswith('@'):
-        i = n[0][1:].split(';')
+        tags = _tags_to_dict(n[0][1:])
         del n[0]
-        for tag in i:
-            tag = tag.split('=', 1)
-            if len(tag) == 1:
-                tags[tag[0]] = True
-            elif len(tag) == 2:
-                if '\\' in tag[1]: # Iteration is bad, only do it if required.
-                    value  = ''
-                    escape = False
-                    for char in tag[1]: # TODO: Remove this iteration.
-                        if escape:
-                            value += ircv3_tag_escapes.get(char) or char
-                            escape = False
-                        elif char == '\\':
-                            escape = True
-                        else:
-                            value += char
-                else:
-                    value = tag[1]
-                tags[tag[0]] = value
+    else:
+        tags = {}
 
     # Process arguments
     if n[0].startswith(':'):
@@ -301,11 +308,8 @@ class IRC:
                     return
             raw = raw.split(b'\n')
             for line in raw:
-                try:
-                    line = line.decode('utf-8', errors = 'replace')
-                except UnicodeDecodeError:
-                    self.debug('Bad line:', line)
-                    line = ''
+                line = line.decode('utf-8', errors = 'replace')
+
                 if len(line) > 0:
                     self.debug('<<<', line)
                     result = self._parse(line)
@@ -491,17 +495,11 @@ def _handler(irc, hostmask, args):
 @Handler('IRCv3 STS')
 def _handler(irc, hostmask, args):
     if not irc.ssl and len(args) == 2:
-        params = args[-1].split(',')
-        port = None
-        for i in params:
-            n = i.split('=')
-            if len(n) == 2 and n[0] == 'port':
-                port = n[1]
-                break
         try:
-            port = int(port)
+            port = int(_tags_to_dict(args[1], ',')['port'])
         except:
             port = None
+
         if port:
             persist = irc.persist
             irc.disconnect()
