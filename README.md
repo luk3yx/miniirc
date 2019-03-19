@@ -40,11 +40,20 @@ irc = miniirc.IRC(ip, port, nick, channels = None, *, ssl = None, ident = None, 
 | `debug(...)`  | Debug, calls `print(...)` if debug mode is on.            |
 | `disconnect(msg = ..., *, auto_reconnect = False)`| Disconnects from the IRC server. `auto_reconnect` will be overriden by `self.persist` if set to `True`. |
 | `Handler(...)` | An event handler, see [Handlers](#handlers) for more info.|
-| `main()`      | Starts the main loop in a thread if not already running.  |
 | `me(target, *msg, tags=None)`        | Sends a `/me` (`CTCP ACTION`) to `target`.  |
 | `msg(target, *msg, tags=None)`       | Sends a `PRIVMSG` to `target`.              |
 | `notice(target, *msg, tags=None)`    | Sends a `NOTICE` to `target`.               |
 | `quote(*msg, force=None, tags=None)` | Sends a raw message to IRC, use `force=True` to send while disconnected. Do not send multiple commands in one `irc.quote()`, as the newlines will be stripped and it will be sent as one command. The `tags` parameter optionally allows you to add a `dict` with IRCv3 client tags (all starting in `+`), and will not be sent to IRC servers that do not support client tags. |
+
+## Variables
+
+*These variables should not be changed outside `miniirc.py`.*
+
+| Variable      | Description                                               |
+| ------------- | --------------------------------------------------------  |
+| `isupport`    | *New in 1.1.0.* A `dict` with values (not necessarily strings) from `ISUPPORT` messages sent to the client. |
+| `msglen`      | *New in 1.1.0.* The maximum length (in bytes) of messages (including `\r\n`). This is automatically changed if the server supports the `oragono.io/maxline-2` capability. |
+| `nick`        | The current nickname.                                     |
 
 ## Handlers
 

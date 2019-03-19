@@ -9,14 +9,14 @@ import atexit, threading, socket, ssl, sys
 from time import sleep
 
 # The version string and tuple
-ver     = (1,0,10)
-version = 'miniirc IRC framework v1.0.10'
+ver     = (1,1,0)
+version = 'miniirc IRC framework v1.1.0'
 
 # __all__ and _default_caps
 __all__ = ['Handler', 'IRC']
 _default_caps = {'account-tag', 'cap-notify', 'chghost',
-    'draft/message-tags-0.2', 'invite-notify', 'message-tags', 'server-time',
-    'sts'}
+    'draft/message-tags-0.2', 'invite-notify', 'message-tags',
+    'oragono.io/maxline-2', 'server-time', 'sts'}
 
 # Get the certificate list.
 try:
@@ -46,9 +46,11 @@ def Handler(*events, ircv3 = False):
 
 # Parse IRCv3 tags
 ircv3_tag_escapes = {':': ';', 's': ' ', 'r': '\r', 'n': '\n'}
-def _tags_to_dict(tag_string, separator = ';'):
+def _tags_to_dict(tag_list, separator = ';'):
     tags = {}
-    for tag in tag_string.split(separator):
+    if separator:
+        tag_list = tag_list.split(separator)
+    for tag in tag_list:
         tag = tag.split('=', 1)
         if len(tag) == 1:
             tags[tag[0]] = True
@@ -128,7 +130,7 @@ def _dict_to_tags(tags):
             if type(tags[tag]) == str:
                 etag += '=' + _escape_tag(tags[tag]) + ';'
             etag = (etag + ';').encode('utf-8')
-            if len(res) + len(etag) > 4095:
+            if len(res) + len(etag) > 4094:
                 break
             res += etag
     if len(res) < 3:
@@ -140,6 +142,7 @@ class IRC:
     connected       = None
     debug_file      = sys.stdout
     sendq           = None
+    msglen          = 512
     _main_lock      = None
     _sasl           = False
     _unhandled_caps = None
@@ -166,7 +169,7 @@ class IRC:
                 for i in sendq:
                     self.quote(*i)
             msg = ' '.join(msg).replace('\r', ' ').replace('\n', ' ').encode(
-                'utf-8')[:510]
+                'utf-8')[:self.msglen - 2]
             if tags and len(tags) > 0:
                 msg = _dict_to_tags(tags) + msg
             self.sock.sendall(msg + b'\r\n')
@@ -354,6 +357,7 @@ class IRC:
         self.ns_identity    = ns_identity
         self.ircv3_caps     = set(ircv3_caps or ()) | _default_caps
         self.active_caps    = set()
+        self.isupport       = {}
         self.connect_modes  = connect_modes
         self.quit_message   = quit_message
         self.verify_ssl     = verify_ssl
@@ -381,6 +385,7 @@ class IRC:
 @Handler('001')
 def _handler(irc, hostmask, args):
     irc.connected = True
+    irc.isupport.clear()
     irc._unhandled_caps = None
     irc.debug('Connected!')
     if irc.connect_modes:
@@ -388,13 +393,13 @@ def _handler(irc, hostmask, args):
     if not irc._sasl and irc.ns_identity:
         irc.debug('Logging in (no SASL, aww)...')
         irc.msg('NickServ', 'identify ' + irc.ns_identity)
-    irc.debug('*** Joining channels...', irc.channels)
-    irc.quote('JOIN', ','.join(irc.channels))
+    if len(irc.channels) > 0:
+        irc.debug('*** Joining channels...', irc.channels)
+        irc.quote('JOIN', ','.join(irc.channels))
 
 @Handler('PING')
 def _handler(irc, hostmask, args):
-    args.insert(0, 'PONG')
-    irc.quote(' '.join(args), force = True)
+    irc.quote('PONG', *args, force = True)
 
 @Handler('432', '433')
 def _handler(irc, hostmask, args):
@@ -403,7 +408,7 @@ def _handler(irc, hostmask, args):
             return int(irc.nick[0])
         except:
             pass
-        if len(irc.nick) > 20:
+        if len(irc.nick) >= irc.isupport.get('NICKLEN', 20):
             return
         print('WARNING: The requested nickname', repr(irc.nick), 'is invalid or'
             ' already in use. Trying again with', repr(irc.nick + '_') + '...',
@@ -492,6 +497,7 @@ def _handler(irc, hostmask, args):
 def _handler(irc, hostmask, args):
     irc.finish_negotiation('sasl')
 
+# STS
 @Handler('IRCv3 STS')
 def _handler(irc, hostmask, args):
     if not irc.ssl and len(args) == 2:
@@ -513,5 +519,37 @@ def _handler(irc, hostmask, args):
             return
 
     irc.finish_negotiation('sts')
+
+# Maximum line length
+@Handler('IRCv3 oragono.io/maxline-2')
+def _handler(irc, hostmask, args):
+    try:
+        msglen = int(args[-1])
+        assert msglen > 512
+        irc._adj_msglen = msglen
+    except:
+        pass
+
+    irc.finish_negotiation(args[0])
+
+# Handle ISUPPORT messages
+@Handler('005')
+def _handler(irc, hostmask, args):
+    del args[0]
+    if args[-1].startswith(':'):
+        del args[-1]
+    isupport = _tags_to_dict(args, None)
+
+    # Try and auto-detect integers
+    for key in isupport:
+        try:
+            isupport[key] = int(isupport[key])
+            if key == 'NICKLEN':
+                irc.nick = irc.nick[:isupport[key]]
+        except:
+            if key.endswith('LEN'):
+                del isupport[key]
+
+    irc.isupport.update(isupport)
 
 del _handler
