@@ -9,8 +9,8 @@ import atexit, threading, socket, ssl, sys
 from time import sleep
 
 # The version string and tuple
-ver     = (1,1,0)
-version = 'miniirc IRC framework v1.1.0'
+ver     = (1,1,1)
+version = 'miniirc IRC framework v1.1.1'
 
 # __all__ and _default_caps
 __all__ = ['Handler', 'IRC']
@@ -541,6 +541,7 @@ def _handler(irc, hostmask, args):
     isupport = _tags_to_dict(args, None)
 
     # Try and auto-detect integers
+    remove = set()
     for key in isupport:
         try:
             isupport[key] = int(isupport[key])
@@ -548,7 +549,9 @@ def _handler(irc, hostmask, args):
                 irc.nick = irc.nick[:isupport[key]]
         except:
             if key.endswith('LEN'):
-                del isupport[key]
+                remove.add(key)
+    for key in remove:
+        del isupport[key]
 
     irc.isupport.update(isupport)
 
