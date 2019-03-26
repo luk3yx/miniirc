@@ -9,8 +9,8 @@ import atexit, threading, socket, ssl, sys
 from time import sleep
 
 # The version string and tuple
-ver     = (1,1,1)
-version = 'miniirc IRC framework v1.1.1'
+ver     = (1,1,2)
+version = 'miniirc IRC framework v1.1.2'
 
 # __all__ and _default_caps
 __all__ = ['Handler', 'IRC']
@@ -150,7 +150,7 @@ class IRC:
     # Debug print()
     def debug(self, *args, **kwargs):
         if self.debug_file:
-            print(*args, **kwargs, file = self.debug_file)
+            print(*args, file = self.debug_file, **kwargs)
             if hasattr(self.debug_file, 'flush'):
                 self.debug_file.flush()
 
