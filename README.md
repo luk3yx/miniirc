@@ -1,10 +1,15 @@
 # miniirc
 
-[![Available on PyPI.](https://img.shields.io/pypi/v/miniirc.svg)](https://pypi.org/project/miniirc/) [![Code Climate](https://api.codeclimate.com/v1/badges/22b7784b82dea11bba1d/maintainability)](https://codeclimate.com/github/luk3yx/miniirc/maintainability)
+[![Python 3.4+]](#python-version-support) [![Available on PyPI.]](https://pypi.org/project/miniirc/) [![License: MIT]](https://github.com/luk3yx/miniirc/blob/master/LICENSE.md) [![Code Climate]](https://codeclimate.com/github/luk3yx/miniirc/maintainability)
 
 A simple IRC client framework.
 
 To install miniirc, simply run `pip3 install miniirc` as root.
+
+[Python 3.4+]: https://img.shields.io/badge/python-3.4/3.5+-blue.svg
+[Available on PyPI.]: https://img.shields.io/pypi/v/miniirc.svg
+[License: MIT]: https://img.shields.io/pypi/l/miniirc.svg
+[Code Climate]: https://api.codeclimate.com/v1/badges/22b7784b82dea11bba1d/maintainability
 
 ## Parameters
 
@@ -179,7 +184,27 @@ however backwards compatibility is preserved where possible when major releases
 change. Patch version numbers can and will increase quickly, as miniirc is (at
 the time of writing this) under active development.
 
+## Python version support
+
+ - Python 2 does not work and will (probably) never work with miniirc.
+ - Python 3.3 and below probably won't work, and fixes will not be added unless
+    they are very trivial.
+ - Python 3.4 is not tested as thoroughly, however should work (and does with
+    version 1.1.2).
+ - Python 3.5 and above should work with the latest stable version of miniirc.
+
+If there is a bug/error in Python 3.4 or newer (or a very trivial fix for
+Python 3.3), please open an issue or pull request on
+[GitHub](https://github.com/luk3yx/miniirc/issues) or
+[GitLab](https://gitlab.com/luk3yx/miniirc/issues).
+
 ## Working examples/implementations
 
-There is a working example and stdinbot (dumps stdin to an IRC channel) on
-[luk3yx/stdinbot](https://gitlab.com/luk3yx/stdinbot).
+Here is a list of some (open-source) bots using miniirc, in alphabetial order:
+
+ - lurklite - A generic configurable IRC bot:
+    [GitHub](https://github.com/luk3yx/lurklite),
+    [GitLab](https://gitlab.com/luk3yx/lurklite).
+ - stdinbot - A very simple bot that dumps stdin to an IRC channel:
+    [GitHub](https://github.com/luk3yx/stdinbot),
+    [GitLab](https://gitlab.com/luk3yx/stdinbot).
