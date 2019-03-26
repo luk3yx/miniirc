@@ -202,9 +202,16 @@ Python 3.3), please open an issue or pull request on
 
 Here is a list of some (open-source) bots using miniirc, in alphabetial order:
 
- - lurklite - A generic configurable IRC bot:
-    [GitHub](https://github.com/luk3yx/lurklite),
-    [GitLab](https://gitlab.com/luk3yx/lurklite).
- - stdinbot - A very simple bot that dumps stdin to an IRC channel:
-    [GitHub](https://github.com/luk3yx/stdinbot),
-    [GitLab](https://gitlab.com/luk3yx/stdinbot).
+ - [irc-rss-feed-bot] - Posts RSS entry titles and shortened URLs to IRC
+    channels. *Python 3.7+*
+ - [irc-url-title-bot] - Gets webpage titles from URLs posted in IRC channels.
+    *Python 3.7+*
+ - [lurklite] - A generic configurable IRC bot.
+    *[GitHub](https://github.com/luk3yx/lurklite) link.*
+ - [stdinbot] - A very simple bot that dumps stdin to an IRC channel.
+    *[GitHub](https://github.com/luk3yx/stdinbot) link.*
+
+[irc-rss-feed-bot]:  https://github.com/impredicative/irc-rss-feed-bot
+[irc-url-title-bot]: https://github.com/impredicative/irc-url-title-bot
+[lurklite]:          https://gitlab.com/luk3yx/lurklite
+[stdinbot]:          https://gitlab.com/luk3yx/stdinbot
