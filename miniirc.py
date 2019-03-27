@@ -2,7 +2,7 @@
 #
 # miniirc - A small-ish backwards-compatible IRC framework.
 #
-# © 2018 by luk3yx and other developers of miniirc.
+# © 2019 by luk3yx and other developers of miniirc.
 #
 
 import atexit, threading, socket, ssl, sys
