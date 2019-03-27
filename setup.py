@@ -17,7 +17,7 @@ setup(
     long_description              = desc,
     long_description_content_type = 'text/markdown',
     install_requires              = ['certifi'],
-    python_requires               = '>=3.0',
+    python_requires               = '<3.0',
 
     classifiers = [
         'Intended Audience :: Developers',

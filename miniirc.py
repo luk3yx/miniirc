@@ -1,16 +1,22 @@
-#!/usr/bin/python3
+#!/usr/bin/python2
 #
-# miniirc - A small-ish backwards-compatible IRC framework.
+# miniirc Python2 - A (probably broken) Python2-compatible release of miniirc.
 #
-# © 2018 by luk3yx and other developers of miniirc.
+# Copyright 2019 by luk3yx and other developers of miniirc.
 #
 
+from __future__ import print_function, unicode_literals
 import atexit, threading, socket, ssl, sys
 from time import sleep
 
 # The version string and tuple
 ver     = (1,1,3)
-version = 'miniirc IRC framework v1.1.3'
+version = 'miniirc IRC framework v1.1.3 [Python2]'
+
+if sys.version_info < (3,0,0):
+    bytes, str = str, unicode
+else:
+    print('WARNING: You should use the normal Python3 miniirc.')
 
 # __all__ and _default_caps
 __all__ = ['Handler', 'IRC']
@@ -41,8 +47,8 @@ def _add_handler(handlers, events, ircv3):
 
     return _finish_handler
 
-def Handler(*events, ircv3 = False):
-    return _add_handler(_global_handlers, events, ircv3)
+def Handler(*events, **kwargs):
+    return _add_handler(_global_handlers, events, kwargs.get('ircv3'))
 
 # Parse IRCv3 tags
 ircv3_tag_escapes = {':': ';', 's': ' ', 'r': '\r', 'n': '\n'}
@@ -155,7 +161,8 @@ class IRC:
                 self.debug_file.flush()
 
     # Send raw messages
-    def quote(self, *msg, force = None, tags = None):
+    def quote(self, *msg, **kwargs):
+        force, tags = kwargs.get('force'), kwargs.get('tags')
         if not tags and len(msg) > 0 and type(msg[0]) == dict:
             tags = msg[0]
             msg  = msg[1:]
@@ -182,22 +189,26 @@ class IRC:
             self.sendq.append(msg)
 
     # User-friendly msg, notice, and ctcp functions.
-    def msg(self, target, *msg, tags = None):
+    def msg(self, target, *msg, **kwargs):
+        tags = kwargs.get('tags')
         self.quote('PRIVMSG', str(target), ':' + ' '.join(msg), tags = tags)
 
-    def notice(self, target, *msg, tags = None):
+    def notice(self, target, *msg, **kwargs):
+        tags = kwargs.get('tags')
         self.quote('NOTICE',  str(target), ':' + ' '.join(msg), tags = tags)
 
-    def ctcp(self, target, *msg, reply = False, tags = None):
+    def ctcp(self, target, *msg, **kwargs):
+        reply, tags = kwargs.get('reply'), kwargs.get('tags')
         m = (self.notice if reply else self.msg)
         return m(target, '\x01{}\x01'.format(' '.join(msg)), tags = tags)
 
-    def me(self, target, *msg, tags = None):
+    def me(self, target, *msg, **kwargs):
+        tags = kwargs.get('tags')
         return self.ctcp(target, 'ACTION', *msg, tags = tags)
 
     # Allow per-connection handlers
-    def Handler(self, *events, ircv3 = False):
-        return _add_handler(self.handlers, events, ircv3)
+    def Handler(self, *events, **kwargs):
+        return _add_handler(self.handlers, events, kwargs.get('ircv3'))
 
     # The connect function
     def connect(self):
@@ -232,11 +243,12 @@ class IRC:
         self.main()
 
     # An easier way to disconnect
-    def disconnect(self, msg = None, *, auto_reconnect = False):
-        self.persist   = auto_reconnect and self.persist
+    def disconnect(self, msg = None, **kwargs):
+        if self.connected is None:
+            return
+        self.persist   = kwargs.get('auto_reconnect', False) and self.persist
         self.connected = None
         msg            = msg or self.quit_message
-        atexit.unregister(self.disconnect)
         self._unhandled_caps = None
         try:
             self.quote('QUIT :' + str(msg), force = True)
@@ -314,7 +326,7 @@ class IRC:
                 line = line.decode('utf-8', errors = 'replace')
 
                 if len(line) > 0:
-                    self.debug('<<<', line)
+                    self.debug('<<<', repr(line))
                     result = self._parse(line)
                     if type(result) == tuple and len(result) == 4:
                         self._handle(*result)
@@ -332,37 +344,27 @@ class IRC:
         return self._main_lock
 
     # Initialize the class
-    def __init__(self, ip, port, nick, channels = None, *,
-      ssl           = None, # None: Auto
-      ident         = None,
-      realname      = None,
-      persist       = True,
-      debug         = False,
-      ns_identity   = None,
-      auto_connect  = True,
-      ircv3_caps    = set(),
-      connect_modes = None,
-      quit_message  = 'I grew sick and died.',
-      verify_ssl    = True
-      ):
+    def __init__(self, ip, port, nick, channels = None, **kwargs):
         # Set basic variables
         self.ip             = ip
         self.port           = int(port)
         self.nick           = nick
         self.channels       = set(channels or ())
-        self.ident          = ident    or nick
-        self.realname       = realname or nick
-        self.ssl            = ssl
-        self.persist        = persist
-        self.ns_identity    = ns_identity
-        self.ircv3_caps     = set(ircv3_caps or ()) | _default_caps
+        self.ident          = kwargs.get('ident') or nick
+        self.realname       = kwargs.get('realname') or nick
+        self.ssl            = kwargs.get('ssl')
+        self.persist        = kwargs.get('persist', True)
+        self.ns_identity    = kwargs.get('ns_identity')
+        self.ircv3_caps     = set(kwargs.get('ircv3_caps', ())) | _default_caps
         self.active_caps    = set()
         self.isupport       = {}
-        self.connect_modes  = connect_modes
-        self.quit_message   = quit_message
-        self.verify_ssl     = verify_ssl
+        self.connect_modes  = kwargs.get('connect_modes')
+        self.quit_message   = kwargs.get('quit_message',
+            'I grew sick and died.')
+        self.verify_ssl     = kwargs.get('verify_ssl', True)
 
         # Set the debug file
+        debug = kwargs.get('debug')
         if not debug:
             self.debug_file = None
         elif hasattr(debug, 'write'):
@@ -374,11 +376,11 @@ class IRC:
         # Add handlers and set the default message parser
         self.change_parser()
         self.handlers       = {}
-        if ssl == None and self.port == 6697:
+        if kwargs.get('ssl') == None and self.port == 6697:
             self.ssl = True
 
         # Start the connection
-        if auto_connect:
+        if kwargs.get('auto_connect', True):
             self.connect()
 
 # Create basic handlers, so the bot will work.
