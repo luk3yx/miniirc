@@ -1,6 +1,6 @@
 # miniirc
 
-[![Python 3.4+]](#python-version-support) [![Available on PyPI.]](https://pypi.org/project/miniirc/) [![License: MIT]](https://github.com/luk3yx/miniirc/blob/master/LICENSE.md) [![Code Climate]](https://codeclimate.com/github/luk3yx/miniirc/maintainability)
+[![Python 3.4+]](#python-version-support) [![Available on PyPI.]](https://pypi.org/project/miniirc/) [![License: MIT]](https://github.com/luk3yx/miniirc/blob/master/LICENSE.md)
 
 A simple IRC client framework.
 
@@ -9,7 +9,6 @@ To install miniirc, simply run `pip3 install miniirc` as root.
 [Python 3.4+]: https://img.shields.io/badge/python-3.4/3.5+-blue.svg
 [Available on PyPI.]: https://img.shields.io/pypi/v/miniirc.svg
 [License: MIT]: https://img.shields.io/pypi/l/miniirc.svg
-[Code Climate]: https://api.codeclimate.com/v1/badges/22b7784b82dea11bba1d/maintainability
 
 ## Parameters
 
