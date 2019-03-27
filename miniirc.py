@@ -11,7 +11,7 @@ from time import sleep
 
 # The version string and tuple
 ver     = (1,1,3)
-version = 'miniirc IRC framework v1.1.3 [Python2]'
+version = 'miniirc IRC framework v1.1.3 / v0.4.3 [Python2]'
 
 if sys.version_info < (3,0,0):
     bytes, str = str, unicode
