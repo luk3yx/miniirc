@@ -185,7 +185,7 @@ the time of writing this) under active development.
 
 ## Python version support
 
- - Python 2 does not work and will (probably) never work with miniirc.
+ - Python 2 does not work and will (probably) never work with miniirc. If you MUST use Python 2, you can use the (probably outdated and bug-filled) python2 branch.
  - Python 3.3 and below probably won't work, and fixes will not be added unless
     they are very trivial.
  - Python 3.4 is not tested as thoroughly, however should work (and does with
