@@ -9,8 +9,8 @@ import atexit, threading, socket, ssl, sys
 from time import sleep
 
 # The version string and tuple
-ver     = (1,1,3)
-version = 'miniirc IRC framework v1.1.3'
+ver     = (1,1,4)
+version = 'miniirc IRC framework v1.1.4'
 
 # __all__ and _default_caps
 __all__ = ['Handler', 'IRC']
@@ -136,6 +136,19 @@ def _dict_to_tags(tags):
     if len(res) < 3:
         return b''
     return res[:-1] + b' '
+
+# A wrapper for callable logfiles
+class _Logfile:
+    _buffer = ''
+
+    def write(self, data):
+        self._buffer += data
+        while '\n' in self._buffer:
+            line, self._buffer = self._buffer.split('\n', 1)
+            self._func(line)
+
+    def __init__(self, func):
+        self._func = func
 
 # Create the IRC class
 class IRC:
@@ -367,6 +380,8 @@ class IRC:
             self.debug_file = None
         elif hasattr(debug, 'write'):
             self.debug_file = debug
+        elif hasattr(debug, '__call__'):
+            self.debug_file = _Logfile(debug)
 
         # Add IRCv3 capabilities.
         if self.ns_identity:    self.ircv3_caps.add('sasl')

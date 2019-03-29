@@ -26,7 +26,7 @@ irc = miniirc.IRC(ip, port, nick, channels = None, *, ssl = None, ident = None, 
 | `ident`       | The ident to use, defaults to `nick`.                     |
 | `realname`    | The realname to use, defaults to `nick` as well.          |
 | `persist`     | Whether to automatically reconnect.                       |
-| `debug`       | Enables debug mode, prints all IRC messages. This can also be a file object (with write mode enabled) if you want debug messages to be written into a file instead of being printed to stdout. |
+| `debug`       | Enables debug mode, prints all IRC messages. This can also be a file-like object (with write mode enabled) if you want debug messages to be written into a file instead of being printed to stdout, or a function (for example `logging.debug`). |
 | `ns_identity` | The NickServ account to use (`<user> <password>`).        |
 | `auto_connect`| Runs `.connect()` straight away.                          |
 | `ircv3_caps`  | A set() of IRCv3 capabilities to request. SASL is auto-added if `ns_identity` is specified. |
