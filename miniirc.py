@@ -9,8 +9,8 @@ import atexit, threading, socket, ssl, sys
 from time import sleep
 
 # The version string and tuple
-ver     = (1,2,0)
-version = 'miniirc IRC framework v1.2.0'
+ver     = (1,2,1)
+version = 'miniirc IRC framework v1.2.1'
 
 # __all__ and _default_caps
 __all__ = ['Handler', 'IRC']
@@ -304,8 +304,6 @@ class IRC:
     # The main loop
     def _main(self):
         self.debug('Main loop running!')
-        if self.ping_interval:
-            self.sock.settimeout(self.ping_interval)
         while True:
             raw = b''
             c = 0
@@ -418,6 +416,8 @@ def _handler(irc, hostmask, args):
     irc.connected = True
     irc.isupport.clear()
     irc._unhandled_caps = None
+    if self.ping_interval:
+        self.sock.settimeout(self.ping_interval)
     irc.debug('Connected!')
     if irc.connect_modes:
         irc.quote('MODE', irc.nick, irc.connect_modes)
