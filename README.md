@@ -13,7 +13,7 @@ To install miniirc, simply run `pip3 install miniirc` as root.
 ## Parameters
 
 ~~~py
-irc = miniirc.IRC(ip, port, nick, channels = None, *, ssl = None, ident = None, realname = None, persist = True, debug = False, ns_identity = None, auto_connect = True, ircv3_caps = set(), quit_message  = 'I grew sick and died.', verify_ssl = True)
+irc = miniirc.IRC(ip, port, nick, channels = None, *, ssl = None, ident = None, realname = None, persist = True, debug = False, ns_identity = None, auto_connect = True, ircv3_caps = set(), quit_message  = 'I grew sick and died.', ping_timeout = 60, verify_ssl = True)
 ~~~
 
 | Parameter     | Description                                                |
@@ -27,11 +27,12 @@ irc = miniirc.IRC(ip, port, nick, channels = None, *, ssl = None, ident = None, 
 | `realname`    | The realname to use, defaults to `nick` as well.          |
 | `persist`     | Whether to automatically reconnect.                       |
 | `debug`       | Enables debug mode, prints all IRC messages. This can also be a file-like object (with write mode enabled) if you want debug messages to be written into a file instead of being printed to stdout, or a function (for example `logging.debug`). |
-| `ns_identity` | The NickServ account to use (`<user> <password>`).        |
+| `ns_identity` | The NickServ account to use (`<user> <password>`). This can be a tuple or list since miniirc v1.2.0, however for backwards compatibility it should probably be a string. |
 | `auto_connect`| Runs `.connect()` straight away.                          |
 | `ircv3_caps`  | A set() of IRCv3 capabilities to request. SASL is auto-added if `ns_identity` is specified. |
 | `connect_modes` | A mode string (for example `'+B'`) of UMODEs to set when connected. |
 | `quit_message`| Sets the default quit message. This can be modified per-quit with `irc.disconnect()`. |
+| `ping_interval` | If no packets are sent or received for this amount of seconds, miniirc will send a `PING`, and if no reply is sent, after the same timeout, miniirc will attempt to reconnect. Set to `None` to disable. |
 | `verify_ssl`  | Verifies TLS/SSL certificates. Disabling this is not recommended. If you have trouble with certificate verification, try running `pip3 install certifi` first. |
 
 ## Functions
