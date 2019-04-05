@@ -327,11 +327,17 @@ class IRC:
                 except Exception as e:
                     self.debug('Lost connection! ', repr(e))
                     self.disconnect(auto_reconnect = True)
-                    if self.persist:
+                    while self.persist:
                         sleep(5)
                         self.debug('Reconnecting...')
                         self._main_lock = None
-                        self.connect()
+                        try:
+                            self.connect()
+                        except:
+                            self.debug('Failed to reconnect!')
+                            self.connected = None
+                        else:
+                            return
                     return
             raw = raw.split(b'\n')
             for line in raw:
