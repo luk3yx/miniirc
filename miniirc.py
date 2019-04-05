@@ -9,8 +9,8 @@ import atexit, threading, socket, ssl, sys
 from time import sleep
 
 # The version string and tuple
-ver     = (1,1,4)
-version = 'miniirc IRC framework v1.1.4'
+ver     = (1,2,0)
+version = 'miniirc IRC framework v1.2.0'
 
 # __all__ and _default_caps
 __all__ = ['Handler', 'IRC']
@@ -363,19 +363,11 @@ class IRC:
 
     # Initialize the class
     def __init__(self, ip, port, nick, channels = None, *,
-      ssl           = None, # None: Auto
-      ident         = None,
-      realname      = None,
-      persist       = True,
-      debug         = False,
-      ns_identity   = None,
-      auto_connect  = True,
-      ircv3_caps    = set(),
-      connect_modes = None,
-      quit_message  = 'I grew sick and died.',
-      ping_interval = 60,
-      verify_ssl    = True
-      ):
+            ssl = None, ident = None, realname = None, persist = True,
+            debug = False, ns_identity = None, auto_connect = True,
+            ircv3_caps = set(), connect_modes = None,
+            quit_message = 'I grew sick and died.', ping_interval = 60,
+            verify_ssl = True):
         # Set basic variables
         self.ip             = ip
         self.port           = int(port)
@@ -385,7 +377,6 @@ class IRC:
         self.realname       = realname or nick
         self.ssl            = ssl
         self.persist        = persist
-        self.ns_identity    = ns_identity
         self.ircv3_caps     = set(ircv3_caps or ()) | _default_caps
         self.active_caps    = set()
         self.isupport       = {}
@@ -393,6 +384,12 @@ class IRC:
         self.quit_message   = quit_message
         self.ping_interval  = ping_interval
         self.verify_ssl     = verify_ssl
+
+        # Set the NickServ identity
+        if not ns_identity or isinstance(ns_identity, str):
+            self.ns_identity = ns_identity
+        else:
+            self.ns_identity = ' '.join(ns_identity)
 
         # Set the debug file
         if not debug:
