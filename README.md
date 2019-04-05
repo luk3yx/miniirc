@@ -189,7 +189,7 @@ the time of writing this) under active development.
  - Python 3.3 and below probably won't work, and fixes will not be added unless
     they are very trivial.
  - Python 3.4 is not tested as thoroughly, however should work (and does with
-    version 1.1.2).
+    version 1.1.4).
  - Python 3.5 and above should work with the latest stable version of miniirc.
 
 If there is a bug/error in Python 3.4 or newer (or a very trivial fix for
