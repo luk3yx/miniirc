@@ -158,6 +158,7 @@ class IRC:
     msglen          = 512
     _main_lock      = None
     _sasl           = False
+    _pinged         = False
     _unhandled_caps = None
 
     # Debug print()
@@ -303,13 +304,23 @@ class IRC:
     # The main loop
     def _main(self):
         self.debug('Main loop running!')
+        if self.ping_interval:
+            self.sock.settimeout(self.ping_interval)
         while True:
             raw = b''
             c = 0
             while not raw.endswith(b'\n'):
                 c += 1
                 try:
-                    raw += self.sock.recv(4096).replace(b'\r', b'\n')
+                    try:
+                        raw += self.sock.recv(4096).replace(b'\r', b'\n')
+                    except socket.timeout:
+                        if self._pinged:
+                            raise Exception('Ping timeout!')
+                        else:
+                            self.quote('PING', ':miniirc-ping', force = True)
+                            self._pinged = True
+
                     if c > 1000:
                         self.debug('Waited 1,000 times on the socket!')
                         raise Exception('Spam detected')
@@ -356,6 +367,7 @@ class IRC:
       ircv3_caps    = set(),
       connect_modes = None,
       quit_message  = 'I grew sick and died.',
+      ping_interval = 60,
       verify_ssl    = True
       ):
         # Set basic variables
@@ -373,6 +385,7 @@ class IRC:
         self.isupport       = {}
         self.connect_modes  = connect_modes
         self.quit_message   = quit_message
+        self.ping_interval  = ping_interval
         self.verify_ssl     = verify_ssl
 
         # Set the debug file
@@ -415,6 +428,11 @@ def _handler(irc, hostmask, args):
 @Handler('PING')
 def _handler(irc, hostmask, args):
     irc.quote('PONG', *args, force = True)
+
+@Handler('PONG')
+def _handler(irc, hostmask, args):
+    if len(args) > 0 and args[-1] == ':miniirc-ping':
+        irc._pinged = False
 
 @Handler('432', '433')
 def _handler(irc, hostmask, args):
