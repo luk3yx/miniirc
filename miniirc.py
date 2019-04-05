@@ -416,8 +416,8 @@ def _handler(irc, hostmask, args):
     irc.connected = True
     irc.isupport.clear()
     irc._unhandled_caps = None
-    if self.ping_interval:
-        self.sock.settimeout(self.ping_interval)
+    if irc.ping_interval:
+        irc.sock.settimeout(irc.ping_interval)
     irc.debug('Connected!')
     if irc.connect_modes:
         irc.quote('MODE', irc.nick, irc.connect_modes)
