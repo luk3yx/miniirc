@@ -158,7 +158,6 @@ class IRC:
     msglen          = 512
     _main_lock      = None
     _sasl           = False
-    _pinged         = False
     _unhandled_caps = None
 
     # Debug print()
@@ -243,6 +242,7 @@ class IRC:
         self.quote('NICK', self.nick, force = True)
         atexit.register(self.disconnect)
         self.debug('Starting main loop...')
+        self._pinged = False
         self.main()
 
     # An easier way to disconnect
