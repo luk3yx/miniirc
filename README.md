@@ -13,7 +13,7 @@ To install miniirc, simply run `pip3 install miniirc` as root.
 ## Parameters
 
 ~~~py
-irc = miniirc.IRC(ip, port, nick, channels = None, *, ssl = None, ident = None, realname = None, persist = True, debug = False, ns_identity = None, auto_connect = True, ircv3_caps = set(), quit_message  = 'I grew sick and died.', ping_timeout = 60, verify_ssl = True)
+irc = miniirc.IRC(ip, port, nick, channels = None, *, ssl = None, ident = None, realname = None, persist = True, debug = False, ns_identity = None, auto_connect = True, ircv3_caps = set(), quit_message  = 'I grew sick and died.', ping_interval = 60, verify_ssl = True)
 ~~~
 
 | Parameter     | Description                                                |
