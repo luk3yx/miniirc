@@ -5,8 +5,7 @@
 # © 2019 by luk3yx and other developers of miniirc.
 #
 
-import atexit, threading, socket, ssl, sys
-from time import sleep
+import atexit, errno, threading, time, socket, ssl, sys
 
 # The version string and tuple
 ver     = (1,2,3)
@@ -319,7 +318,7 @@ class IRC:
                             self.quote('PING', ':miniirc-ping', force = True)
                             self._pinged = True
                     except socket.error as e:
-                        if e.errno != 11:
+                        if e.errno != errno.EWOULDBLOCK:
                             raise
 
                     if c > 1000:
@@ -329,7 +328,7 @@ class IRC:
                     self.debug('Lost connection! ', repr(e))
                     self.disconnect(auto_reconnect = True)
                     while self.persist:
-                        sleep(5)
+                        time.sleep(5)
                         self.debug('Reconnecting...')
                         self._main_lock = None
                         try:
@@ -552,7 +551,7 @@ def _handler(irc, hostmask, args):
                 'be changed to', port, 'and TLS/SSL will be enabled.')
             irc.port = port
             irc.ssl  = True
-            sleep(1)
+            time.sleep(1)
             irc.connect()
             irc.persist = persist
             return
