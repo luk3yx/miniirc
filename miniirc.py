@@ -8,8 +8,8 @@
 import atexit, errno, threading, time, socket, ssl, sys
 
 # The version string and tuple
-ver     = (1,2,3)
-version = 'miniirc IRC framework v1.2.3'
+ver     = (1,2,4)
+version = 'miniirc IRC framework v1.2.4'
 
 # __all__ and _default_caps
 __all__ = ['Handler', 'IRC']
@@ -168,7 +168,7 @@ class IRC:
 
     # Send raw messages
     def quote(self, *msg, force = None, tags = None):
-        if not tags and len(msg) > 0 and type(msg[0]) == dict:
+        if not tags and len(msg) > 0 and isinstance(msg[0], dict):
             tags = msg[0]
             msg  = msg[1:]
         if type(tags) != dict or 'message-tags' not in self.active_caps or \
@@ -176,10 +176,6 @@ class IRC:
             tags = None
         if self.connected or force:
             self.debug('>3> ' + str(tags) if tags else '>>>', *msg)
-            if self.sendq and self.connected:
-                sendq, self.sendq = self.sendq, None
-                for i in sendq:
-                    self.quote(*i)
             msg = ' '.join(msg).replace('\r', ' ').replace('\n', ' ').encode(
                 'utf-8')[:self.msglen - 2]
             if tags and len(tags) > 0:
@@ -429,6 +425,11 @@ def _handler(irc, hostmask, args):
     if len(irc.channels) > 0:
         irc.debug('*** Joining channels...', irc.channels)
         irc.quote('JOIN', ','.join(irc.channels))
+
+    if irc.sendq:
+        sendq, irc.sendq = irc.sendq, None
+        for i in sendq:
+            irc.quote(*i)
 
 @Handler('PING')
 def _handler(irc, hostmask, args):
