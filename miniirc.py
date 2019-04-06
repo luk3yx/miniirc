@@ -318,6 +318,9 @@ class IRC:
                         else:
                             self.quote('PING', ':miniirc-ping', force = True)
                             self._pinged = True
+                    except socket.error as e:
+                        if e.errno != 11:
+                            raise
 
                     if c > 1000:
                         self.debug('Waited 1,000 times on the socket!')
