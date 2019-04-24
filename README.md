@@ -82,7 +82,7 @@ def handler(irc, hostmask, args):
 
 Hostmasks are tuples with the format `('user', 'ident', 'hostname')`. If `ident` and `hostname` aren't sent from the server, they will be filled in with the previous value. If a command is received without a hostmask, all the `hostmask` parameters will be set to the name of the command.
 
-## Making existing functions handlers
+### Making existing functions handlers
 
 You can make existing functions handlers (for example class instance methods)
 with `irc.Handler(*events)(handler_function)`.
@@ -96,7 +96,8 @@ add_handler(self.instance_handler)
 ```
 
 This is useful if you want to create a `Bot` (or `Client`) class and add
-class-specific handlers without creating global process-wide handlers.
+class-specific handlers without creating global process-wide handlers or
+creating a wrapper function for every class instance.
 
 ### IRCv3 support
 
