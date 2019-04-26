@@ -8,8 +8,8 @@
 import atexit, errno, threading, time, socket, ssl, sys
 
 # The version string and tuple
-ver     = (1,2,4)
-version = 'miniirc IRC framework v1.2.4'
+ver     = (1,2,5, 'alpha', 2019, 4, 26, 23, 42)
+version = 'miniirc IRC framework v1.2.5 alpha 2019-04-26 23:42'
 
 # __all__ and _default_caps
 __all__ = ['Handler', 'IRC']
@@ -26,22 +26,30 @@ except ImportError:
 # Create global handlers
 _global_handlers = {}
 
-def _add_handler(handlers, events, ircv3):
+def _add_handler(handlers, events, ircv3, cmd_arg = None):
+    if len(events) == 0:
+        events = (None,)
+        if cmd_arg is None:
+            cmd_arg = True
+
     def _finish_handler(func):
         for event in events:
-            event = str(event).upper()
+            if event is not None:
+                event = str(event).upper()
             if event not in handlers:
                 handlers[event] = []
             if func not in handlers[event]:
                 handlers[event].append(func)
         if ircv3:
             func.miniirc_ircv3 = True
+        if cmd_arg:
+            func.miniirc_cmd_arg = True
         return func
 
     return _finish_handler
 
-def Handler(*events, ircv3 = False):
-    return _add_handler(_global_handlers, events, ircv3)
+def Handler(*events, cmd_arg = None, ircv3 = False):
+    return _add_handler(_global_handlers, events, ircv3, cmd_arg)
 
 # Parse IRCv3 tags
 ircv3_tag_escapes = {':': ';', 's': ' ', 'r': '\r', 'n': '\n'}
@@ -269,6 +277,21 @@ class IRC:
     def change_parser(self, parser = ircv3_message_parser):
         self._parse = parser
 
+    # Start a handler function
+    def _start_handler(self, handlers, cmd, hostmask, tags, args):
+        r = False
+        for handler in handlers:
+            r = True
+            params = [self, hostmask, list(args)]
+            if hasattr(handler, 'miniirc_ircv3'):
+                params.insert(2, dict(tags))
+            if hasattr(handler, 'miniirc_cmd_arg'):
+                params.insert(1, cmd)
+            t = threading.Thread(target = handler,
+                args = params)
+            t.start()
+        return r
+
     # Launch handlers
     def _handle(self, cmd, hostmask, tags, args):
         r        = False
@@ -276,14 +299,11 @@ class IRC:
         hostmask = tuple(hostmask)
         for handlers in (_global_handlers, self.handlers):
             if cmd in handlers:
-                for handler in handlers[cmd]:
-                    r = True
-                    params = [self, hostmask, list(args)]
-                    if hasattr(handler, 'miniirc_ircv3'):
-                        params.insert(2, dict(tags))
-                    t = threading.Thread(target = handler,
-                        args = params)
-                    t.start()
+                r = self._start_handler(handlers[cmd], cmd, hostmask, tags, args)
+
+            if None in handlers:
+                self._start_handler(handlers[None], cmd, hostmask, tags, args)
+
         return r
 
     # Launch IRCv3 handlers
