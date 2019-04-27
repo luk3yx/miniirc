@@ -48,8 +48,11 @@ def _add_handler(handlers, events, ircv3, cmd_arg = None):
 
     return _finish_handler
 
-def Handler(*events, cmd_arg = None, ircv3 = False):
-    return _add_handler(_global_handlers, events, ircv3, cmd_arg)
+def Handler(*events, ircv3 = False):
+    return _add_handler(_global_handlers, events, ircv3)
+
+def BaseHandler(*events, ircv3 = False):
+    return _add_handler(_global_handlers, events, ircv3, True)
 
 # Parse IRCv3 tags
 ircv3_tag_escapes = {':': ';', 's': ' ', 'r': '\r', 'n': '\n'}
@@ -214,6 +217,9 @@ class IRC:
     # Allow per-connection handlers
     def Handler(self, *events, ircv3 = False):
         return _add_handler(self.handlers, events, ircv3)
+
+    def BaseHandler(self, *events, ircv3 = False):
+        return _add_handler(self.handlers, events, ircv3, True)
 
     # The connect function
     def connect(self):
