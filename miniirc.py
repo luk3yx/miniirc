@@ -12,7 +12,7 @@ ver     = (1,3,0, 'rc', 0)
 version = 'miniirc IRC framework v1.3.0rc0'
 
 # __all__ and _default_caps
-__all__ = ['Handler', 'IRC']
+__all__ = ['CmdHandler', 'Handler', 'IRC']
 _default_caps = {'account-tag', 'cap-notify', 'chghost',
     'draft/message-tags-0.2', 'invite-notify', 'message-tags',
     'oragono.io/maxline-2', 'server-time', 'sts'}

@@ -29,7 +29,7 @@ irc = miniirc.IRC(ip, port, nick, channels = None, *, ssl = None, ident = None, 
 | `debug`       | Enables debug mode, prints all IRC messages. This can also be a file-like object (with write mode enabled) if you want debug messages to be written into a file instead of being printed to stdout, or a function (for example `logging.debug`). |
 | `ns_identity` | The NickServ account to use (`<user> <password>`). This can be a tuple or list since miniirc v1.2.0, however for backwards compatibility it should probably be a string. |
 | `auto_connect`| Runs `.connect()` straight away.                          |
-| `ircv3_caps`  | A set() of IRCv3 capabilities to request. SASL is auto-added if `ns_identity` is specified. |
+| `ircv3_caps`  | A set() of additional IRCv3 capabilities to request. SASL is auto-added if `ns_identity` is specified. |
 | `connect_modes` | A mode string (for example `'+B'`) of UMODEs to set when connected. |
 | `quit_message`| Sets the default quit message. This can be modified per-quit with `irc.disconnect()`. |
 | `ping_interval` | If no packets are sent or received for this amount of seconds, miniirc will send a `PING`, and if no reply is sent, after the same timeout, miniirc will attempt to reconnect. Set to `None` to disable. |
@@ -204,7 +204,7 @@ def handler(irc, hostmask, args):
     # nickname sent a message to #channel with content :Hello, world!
 
 @miniirc.CmdHandler('PRIVMSG', 'NOTICE')
-def handler(irc, command, hostmask, args):
+def cmdhandler(irc, command, hostmask, args):
     print(hostmask[0], 'sent a', command, 'to', args[0], 'with content',
         args[1])
     # nickname sent a PRIVMSG to #channel with content :Hello, world!
