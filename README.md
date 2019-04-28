@@ -180,7 +180,7 @@ irc.connect()
 If you want to handle multiple events and/or be able to get the name of the
 event being triggered, you can use `irc.CmdHandler`. This will pass an extra
 `command` argument to the handler function (between `irc` and `hostmask`),
-containing an `str` with the command name (such as `PRIVMSG`).
+containing a string with the command name (such as `PRIVMSG`).
 
 #### Catch-all handlers
 
