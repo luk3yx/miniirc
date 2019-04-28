@@ -26,11 +26,11 @@ except ImportError:
 # Create global handlers
 _global_handlers = {}
 
-def _add_handler(handlers, events, ircv3, cmd_arg = None):
+def _add_handler(handlers, events, ircv3, cmd_arg = False):
     if len(events) == 0:
+        if not cmd_arg:
+            raise TypeError('Handler() called without arguments.')
         events = (None,)
-        if cmd_arg is None:
-            cmd_arg = True
 
     def _finish_handler(func):
         for event in events:

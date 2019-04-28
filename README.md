@@ -190,8 +190,7 @@ If you want to handle *every* event, you can use catch-all handlers. To create
 these, you can call `irc.CmdHandler()` *without* any parameters. Note that this
 handler will be called many times while connecting (and once connected).
 
-*Calling `irc.Handler()` without parameters is the same as calling
-    `irc.CmdHandler()` without parameters.*
+*You cannot call `irc.Handler()` without parameters.*
 
 ### Example
 
