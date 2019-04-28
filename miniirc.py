@@ -284,7 +284,7 @@ class IRC:
         self._parse = parser
 
     # Start a handler function
-    def _start_handler(self, handlers, cmd, hostmask, tags, args):
+    def _start_handler(self, handlers, command, hostmask, tags, args):
         r = False
         for handler in handlers:
             r = True
@@ -292,7 +292,7 @@ class IRC:
             if hasattr(handler, 'miniirc_ircv3'):
                 params.insert(2, dict(tags))
             if hasattr(handler, 'miniirc_cmd_arg'):
-                params.insert(1, cmd)
+                params.insert(1, command)
             t = threading.Thread(target = handler,
                 args = params)
             t.start()
