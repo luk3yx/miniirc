@@ -8,8 +8,8 @@
 import atexit, errno, threading, time, socket, ssl, sys
 
 # The version string and tuple
-ver     = (1,3,0, 'rc', 0)
-version = 'miniirc IRC framework v1.3.0rc0'
+ver     = (1,3,0)
+version = 'miniirc IRC framework v1.3.0'
 
 # __all__ and _default_caps
 __all__ = ['CmdHandler', 'Handler', 'IRC']
