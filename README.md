@@ -173,6 +173,26 @@ irc.change_parser(my_message_parser)
 irc.connect()
 ~~~
 
+### Handling multiple events
+
+*New in version 1.3.0.*
+
+If you want to handle multiple events and/or be able to get the name of the
+event being triggered, you can use `irc.CmdHandler`. This will pass an extra
+`command` argument to the handler function (between `irc` and `hostmask`),
+containing an `str` with the command name (such as `PRIVMSG`).
+
+#### Catch-all handlers
+
+**Please do not use these unless there is no other alternative.**
+
+If you want to handle *every* event, you can use catch-all handlers. To create
+these, you can call `irc.CmdHandler()` *without* any parameters. Note that this
+handler will be called many times while connecting (and once connected).
+
+*Calling `irc.Handler()` without parameters is the same as calling
+    `irc.CmdHandler()` without parameters.*
+
 ### Example
 
 ~~~py
@@ -181,6 +201,13 @@ import miniirc
 @miniirc.Handler('PRIVMSG', 'NOTICE')
 def handler(irc, hostmask, args):
     print(hostmask[0], 'sent a message to', args[0], 'with content', args[1])
+    # nickname sent a message to #channel with content :Hello, world!
+
+@miniirc.CmdHandler('PRIVMSG', 'NOTICE')
+def handler(irc, command, hostmask, args):
+    print(hostmask[0], 'sent a', command, 'to', args[0], 'with content',
+        args[1])
+    # nickname sent a PRIVMSG to #channel with content :Hello, world!
 ~~~
 
 This will print a line whenever the bot gets a `PRIVMSG` or `NOTICE`.

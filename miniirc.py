@@ -8,8 +8,8 @@
 import atexit, errno, threading, time, socket, ssl, sys
 
 # The version string and tuple
-ver     = (1,2,5, 'alpha', 2019, 4, 26, 23, 42)
-version = 'miniirc IRC framework v1.2.5 alpha 2019-04-26 23:42'
+ver     = (1,3,0, 'rc', 0)
+version = 'miniirc IRC framework v1.3.0rc0'
 
 # __all__ and _default_caps
 __all__ = ['Handler', 'IRC']
@@ -51,7 +51,7 @@ def _add_handler(handlers, events, ircv3, cmd_arg = None):
 def Handler(*events, ircv3 = False):
     return _add_handler(_global_handlers, events, ircv3)
 
-def BaseHandler(*events, ircv3 = False):
+def CmdHandler(*events, ircv3 = False):
     return _add_handler(_global_handlers, events, ircv3, True)
 
 # Parse IRCv3 tags
@@ -218,7 +218,7 @@ class IRC:
     def Handler(self, *events, ircv3 = False):
         return _add_handler(self.handlers, events, ircv3)
 
-    def BaseHandler(self, *events, ircv3 = False):
+    def CmdHandler(self, *events, ircv3 = False):
         return _add_handler(self.handlers, events, ircv3, True)
 
     # The connect function
