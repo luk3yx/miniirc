@@ -8,8 +8,8 @@
 import atexit, errno, threading, time, socket, ssl, sys
 
 # The version string and tuple
-ver     = (1,3,0)
-version = 'miniirc IRC framework v1.3.0'
+ver     = (1,3,1)
+version = 'miniirc IRC framework v1.3.1'
 
 # __all__ and _default_caps
 __all__ = ['CmdHandler', 'Handler', 'IRC']
@@ -138,7 +138,7 @@ def _dict_to_tags(tags):
         if tags[tag]:
             etag = _escape_tag(tag).replace('=', '-')
             if type(tags[tag]) == str:
-                etag += '=' + _escape_tag(tags[tag]) + ';'
+                etag += '=' + _escape_tag(tags[tag])
             etag = (etag + ';').encode('utf-8')
             if len(res) + len(etag) > 4094:
                 break
