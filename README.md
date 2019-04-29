@@ -85,7 +85,9 @@ Hostmasks are tuples with the format `('user', 'ident', 'hostname')`. If `ident`
 ### Making existing functions handlers
 
 You can make existing functions handlers (for example class instance methods)
-with `irc.Handler(*events)(handler_function)`.
+with `irc.Handler(*events)(handler_function)`. You probably don't want to use
+`miniirc.Handler` for class instance methods, as this will create a handler
+that gets triggered for every `IRC` object.
 
 You can also add multiple handlers of the same type easily:
 
