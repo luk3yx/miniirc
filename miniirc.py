@@ -8,8 +8,8 @@
 import atexit, errno, threading, time, socket, ssl, sys
 
 # The version string and tuple
-ver     = (1,3,1)
-version = 'miniirc IRC framework v1.3.1'
+ver     = (1,3,2)
+version = 'miniirc IRC framework v1.3.2'
 
 # __all__ and _default_caps
 __all__ = ['CmdHandler', 'Handler', 'IRC']
@@ -40,10 +40,12 @@ def _add_handler(handlers, events, ircv3, cmd_arg = False):
                 handlers[event] = []
             if func not in handlers[event]:
                 handlers[event].append(func)
+
+        f = getattr(func, '__func__', func)
         if ircv3:
-            func.miniirc_ircv3 = True
+            f.miniirc_ircv3 = True
         if cmd_arg:
-            func.miniirc_cmd_arg = True
+            f.miniirc_cmd_arg = True
         return func
 
     return _finish_handler
