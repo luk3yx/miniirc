@@ -151,7 +151,7 @@ def _dict_to_tags(tags):
 
 # A wrapper for callable logfiles
 class _Logfile:
-    _buffer = ''
+    __slots__ = ('_buffer', '_func')
 
     def write(self, data):
         self._buffer += data
@@ -160,6 +160,7 @@ class _Logfile:
             self._func(line)
 
     def __init__(self, func):
+        self._buffer = ''
         self._func = func
 
 # Create the IRC class
