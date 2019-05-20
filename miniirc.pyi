@@ -152,7 +152,7 @@ class IRC:
         realname: Optional[str] = None, persist: bool = True,
         debug: Union[bool, io.TextIOWrapper, _Logfile] = False,
         ns_identity: Optional[Union[Tuple[str, str], str]] = None,
-        auto_connect: bool = True, ircv3_caps: Set[str] = ...,
+        auto_connect: bool = True, ircv3_caps: Optional[Set[str]] = None,
         connect_modes: Optional[str] = None,
         quit_message: str = 'I grew sick and died.', ping_interval: int = 60,
         verify_ssl: bool = True) -> None: ...

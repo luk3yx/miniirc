@@ -390,7 +390,7 @@ class IRC:
     def __init__(self, ip, port, nick, channels = None, *,
             ssl = None, ident = None, realname = None, persist = True,
             debug = False, ns_identity = None, auto_connect = True,
-            ircv3_caps = set(), connect_modes = None,
+            ircv3_caps = None, connect_modes = None,
             quit_message = 'I grew sick and died.', ping_interval = 60,
             verify_ssl = True):
         # Set basic variables
