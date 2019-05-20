@@ -50,16 +50,10 @@ def _dict_to_tags(tags: Dict[str, Union[str, bool]]) -> bytes: ...
 
 # A wrapper for callable logfiles
 class _Logfile:
-    _buffer: str = ''
+    __slots__ = ('_buffer', '_func')
 
-    def write(self, data: str):
-        self._buffer += data
-        while '\n' in self._buffer:
-            line, self._buffer = self._buffer.split('\n', 1)
-            self._func(line)
-
-    def __init__(self, func: Callable[[str], Any]):
-        self._func = func
+    def write(self, data: str) -> None: ...
+    def __init__(self, func: Callable[[str], Any]) -> None: ...
 
 # Create the IRC class
 class IRC:
