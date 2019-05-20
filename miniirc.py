@@ -8,8 +8,8 @@
 import atexit, errno, threading, time, socket, ssl, sys
 
 # The version string and tuple
-ver     = (1,3,2)
-version = 'miniirc IRC framework v1.3.2'
+ver     = (1,3,3)
+version = 'miniirc IRC framework v1.3.3'
 
 # __all__ and _default_caps
 __all__ = ['CmdHandler', 'Handler', 'IRC']
@@ -340,7 +340,7 @@ class IRC:
                         if self._pinged:
                             raise Exception('Ping timeout!')
                         else:
-                            self.quote('PING', ':miniirc-ping', force = True)
+                            self.quote('PING', ':miniirc ping', force = True)
                             self._pinged = True
                     except socket.error as e:
                         if e.errno != errno.EWOULDBLOCK:
@@ -466,7 +466,7 @@ def _handler(irc, hostmask, args):
 
 @Handler('PONG')
 def _handler(irc, hostmask, args):
-    if len(args) > 0 and args[-1] == ':miniirc-ping':
+    if len(args) > 0 and args[-1] == ':miniirc ping':
         irc._pinged = False
 
 @Handler('432', '433')
@@ -594,7 +594,7 @@ def _handler(irc, hostmask, args):
     try:
         msglen = int(args[-1])
         assert msglen > 512
-        irc._adj_msglen = msglen
+        irc.msglen = msglen
     except:
         pass
 
