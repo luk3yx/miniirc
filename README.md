@@ -62,19 +62,21 @@ irc = miniirc.IRC(ip, port, nick, channels = None, *, ssl = None, ident = None, 
 
 ## Handlers
 
-Handlers are `@-rules` called in their own thread when their respective IRC event(s) is/are received. Handlers may be global (`@miniirc.handler`) or local (`@miniirc.IRC().handler`) to a certain IRC connection. New handlers are added to existing IRC connections automatically since miniirc 0.3.2.
+Handlers are `@-rules` called in their own thread when their respective IRC event(s) is/are received. Handlers may be global (`@miniirc.handler`) or local (`@miniirc.IRC().handler`) to a certain IRC connection.
 
 The basic syntax for a handler is as followed, where `*events` is a list of events (`PRIVMSG`, `NOTICE`, etc) are called.
 
 ~~~py
 import miniirc
-@miniirc.Handler(*events)
+@miniirc.Handler(*events, colon = True)
 def handler(irc, hostmask, args):
     # irc:      An 'IRC' object.
     # hostmask: A 'hostmask' object.
-    # args:     A list containing the arguments sent to the command.
-    #             Everything following the first `:` in the command
-    #             is put into one item (args[-1]).
+    # args:     A list containing the arguments sent to the command. Everything
+    #             following the first `:` in the command is put into one item
+    #             (args[-1]). If "colon" is "False", the leading ":" (if any)
+    #             is automatically removed. Setting this to False is probably
+    #             a good idea to prevent unexpected side effects.
     pass
 ~~~
 
