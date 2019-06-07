@@ -125,7 +125,8 @@ def handler(irc, hostmask, tags, args):
 
 You can handle IRCv3 capabilities before connecting using a handler.
 You must use `force = True` on any `irc.quote()` called here, as when this is
-called, miniirc has not yet connected.
+called, miniirc has not yet connected. Do not use the `colon` argument for
+`Handler` when creating these handlers to avoid unexpected side-effects.
 
 ~~~py
 import miniirc
@@ -206,11 +207,11 @@ def handler(irc, hostmask, args):
     print(hostmask[0], 'sent a message to', args[0], 'with content', args[1])
     # nickname sent a message to #channel with content :Hello, world!
 
-@miniirc.CmdHandler('PRIVMSG', 'NOTICE')
+@miniirc.CmdHandler('PRIVMSG', 'NOTICE', colon = False)
 def cmdhandler(irc, command, hostmask, args):
     print(hostmask[0], 'sent a', command, 'to', args[0], 'with content',
         args[1])
-    # nickname sent a PRIVMSG to #channel with content :Hello, world!
+    # nickname sent a PRIVMSG to #channel with content Hello, world!
 ~~~
 
 This will print a line whenever the bot gets a `PRIVMSG` or `NOTICE`.

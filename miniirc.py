@@ -8,8 +8,8 @@
 import atexit, errno, threading, time, socket, ssl, sys
 
 # The version string and tuple
-ver     = (1,4,0, 'alpha', 0)
-version = 'miniirc IRC framework v1.4.0a0'
+ver     = (1,4,0, 'rc', 0)
+version = 'miniirc IRC framework v1.4.0rc0'
 
 # __all__ and _default_caps
 __all__ = ['CmdHandler', 'Handler', 'IRC']
@@ -295,7 +295,7 @@ class IRC:
             r = True
             params = [self, hostmask, list(args)]
             if not hasattr(handler, 'miniirc_colon') and args and \
-                args[-1].startswith(':'):
+                    args[-1].startswith(':'):
                 params[2][-1] = args[-1][1:]
             if hasattr(handler, 'miniirc_ircv3'):
                 params.insert(2, dict(tags))
