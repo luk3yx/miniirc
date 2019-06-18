@@ -403,6 +403,8 @@ class IRC:
         self.ip             = ip
         self.port           = int(port)
         self.nick           = nick
+        if isinstance(channels, str):
+            channels = (channels,)
         self.channels       = set(channels or ())
         self.ident          = ident    or nick
         self.realname       = realname or nick
