@@ -21,7 +21,7 @@ irc = miniirc.IRC(ip, port, nick, channels = None, *, ssl = None, ident = None, 
 | `ip`          | The IP/hostname of the IRC server to connect to.          |
 | `port`        | The port to connect to.                                   |
 | `nick`        | The nickname of the bot.                                  |
-| `channels`    | The channels to join on connect.                          |
+| `channels`    | The channels to join on connect. This can be an iterable containing strings (list, set, etc), or (since v1.4.0) a string. |
 | `ssl`         | Enable TLS/SSL. If `None`, TLS/SSL is disabled unless the port is `6697`. |
 | `ident`       | The ident to use, defaults to `nick`.                     |
 | `realname`    | The realname to use, defaults to `nick` as well.          |
@@ -80,6 +80,16 @@ def handler(irc, hostmask, args):
     pass
 ~~~
 
+Recommendations when using handlers:
+ - If you don't need support for miniirc <1.4.0 and are parsing the last
+    parameter, setting `colon` to `False` is strongly recommended. If the
+    `colon` parameter is omitted, it defaults to `True`, however this may change
+    if/when miniirc v2.0.0 is released.
+ - Although `Handler` and `CmdHandler` currently accept any object that can be
+    converted to a string, every event is converted to a string internally.
+ - Not specifying the [`ircv3`](#ircv3-tags) parameter when it is not required
+    prevents a redundant `dict` from being created.
+
 ### Hostmask object
 
 Hostmasks are tuples with the format `('user', 'ident', 'hostname')`. If `ident` and `hostname` aren't sent from the server, they will be filled in with the previous value. If a command is received without a hostmask, all the `hostmask` parameters will be set to the name of the command.
@@ -112,11 +122,11 @@ If you want your handler to support IRCv3 message tags, you need to add
 to your function after `hostmask`. IRCv3 tags are sent to the handlers as
 `dict`s, with values of either strings or `True`.
 
-*Since version 0.3.8, miniirc will automatically un-escape IRCv3 tag values.*
+*miniirc will automatically un-escape IRCv3 tag values.*
 
 ~~~py
 import miniirc
-@miniirc.Handler(*events, ircv3 = True)
+@miniirc.Handler(*events, colon = False, ircv3 = True)
 def handler(irc, hostmask, tags, args):
     pass
 ~~~
@@ -201,6 +211,9 @@ handler will be called many times while connecting (and once connected).
 
 ~~~py
 import miniirc
+
+# Not required, however this makes sure miniirc isn't insanely outdated.
+assert miniirc.ver >= (1,0,0)
 
 @miniirc.Handler('PRIVMSG', 'NOTICE')
 def handler(irc, hostmask, args):

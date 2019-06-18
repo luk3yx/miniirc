@@ -3,7 +3,8 @@
 #   file slower to load.
 
 import atexit, errno, io, threading, time, socket, ssl, sys
-from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Union
+from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Tuple, \
+    Union
 
 # The version string and tuple
 ver: Tuple[int, int, int] = ...
@@ -147,7 +148,7 @@ class IRC:
 
     # Initialize the class
     def __init__(self, ip: str, port: int, nick: str,
-        channels: Union[List[str], Set[str]] = None, *,
+        channels: Union[Iterable[str], str] = None, *,
         ssl: Optional[bool] = None, ident: Optional[str] = None,
         realname: Optional[str] = None, persist: bool = True,
         debug: Union[bool, io.TextIOWrapper, _Logfile] = False,
