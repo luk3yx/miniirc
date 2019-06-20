@@ -27,8 +27,8 @@ except ImportError:
 _global_handlers: Dict[str, Callable] = {}
 
 _add_handler_return = Callable[[Callable], Callable]
-def _add_handler(handlers, events, ircv3, cmd_arg = ...) \
-        -> _add_handler_return: ...
+def _add_handler(handlers, events, ircv3, cmd_arg, colon) \
+    -> _add_handler_return: ...
 
 def Handler(*events: str, colon: bool = True, ircv3: bool = False) \
     -> _add_handler_return: ...
