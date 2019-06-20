@@ -13,8 +13,10 @@ To install miniirc, simply run `pip3 install miniirc` as root.
 ## Parameters
 
 ~~~py
-irc = miniirc.IRC(ip, port, nick, channels = None, *, ssl = None, ident = None, realname = None, persist = True, debug = False, ns_identity = None, auto_connect = True, ircv3_caps = set(), quit_message  = 'I grew sick and died.', ping_interval = 60, verify_ssl = True)
+irc = miniirc.IRC(ip, port, nick, channels=None, *, ssl=None, ident=None, realname=None, persist=True, debug=False, ns_identity=None, auto_connect=True, ircv3_caps=set(), quit_message='I grew sick and died.', ping_interval=60, verify_ssl=True)
 ~~~
+
+*Note that everything before the \* is a positional argument.*
 
 | Parameter     | Description                                                |
 | ------------- | -------------------------------------------------------- |
@@ -39,11 +41,11 @@ irc = miniirc.IRC(ip, port, nick, channels = None, *, ssl = None, ident = None, 
 
 | Function      | Description                                               |
 | ------------- | --------------------------------------------------------  |
-| `change_parser(parser = ...)` | *See the message parser section for documentation.* |
+| `change_parser(parser=...)` | *See the message parser section for documentation.* |
 | `connect()`   | Connects to the IRC server if not already connected.      |
 | `ctcp(target, *msg, reply=False, tags=None)` | Sends a `CTCP` request or reply to `target`. |
 | `debug(...)`  | Debug, calls `print(...)` if debug mode is on.            |
-| `disconnect(msg = ..., *, auto_reconnect = False)`| Disconnects from the IRC server. `auto_reconnect` will be overriden by `self.persist` if set to `True`. |
+| `disconnect(msg=..., *, auto_reconnect=False)`| Disconnects from the IRC server. `auto_reconnect` will be overriden by `self.persist` if set to `True`. |
 | `Handler(...)` | An event handler, see [Handlers](#handlers) for more info.|
 | `me(target, *msg, tags=None)`        | Sends a `/me` (`CTCP ACTION`) to `target`.  |
 | `msg(target, *msg, tags=None)`       | Sends a `PRIVMSG` to `target`.              |
@@ -68,7 +70,7 @@ The basic syntax for a handler is as followed, where `*events` is a list of even
 
 ~~~py
 import miniirc
-@miniirc.Handler(*events, colon = True)
+@miniirc.Handler(*events, colon=True)
 def handler(irc, hostmask, args):
     # irc:      An 'IRC' object.
     # hostmask: A 'hostmask' object.
@@ -118,7 +120,7 @@ creating a wrapper function for every class instance.
 #### IRCv3 tags
 
 If you want your handler to support IRCv3 message tags, you need to add
-`ircv3 = True` to the `Handler` at-rule. You will need to add a `tags` parameter
+`ircv3=True` to the `Handler` at-rule. You will need to add a `tags` parameter
 to your function after `hostmask`. IRCv3 tags are sent to the handlers as
 `dict`s, with values of either strings or `True`.
 
@@ -126,7 +128,7 @@ to your function after `hostmask`. IRCv3 tags are sent to the handlers as
 
 ~~~py
 import miniirc
-@miniirc.Handler(*events, colon = False, ircv3 = True)
+@miniirc.Handler(*events, colon=False, ircv3=True)
 def handler(irc, hostmask, tags, args):
     pass
 ~~~
@@ -177,13 +179,13 @@ def my_message_parser(msg):
 
 #### Changing message parsers
 
-To change message parsers, you can use `irc.change_parser(func = ...)`. If `func` is not
+To change message parsers, you can use `irc.change_parser(func=...)`. If `func` is not
 specified, it will default to the built-in parser. You can only change message parsers
 on-the-fly (for example in an IRCv3 CAP handler). If you need to change message parsers
 before connecting, you can disable `auto_connect` and change it then.
 
 ~~~py
-irc = miniirc.IRC(..., auto_connect = False)
+irc = miniirc.IRC(..., auto_connect=False)
 irc.change_parser(my_message_parser)
 irc.connect()
 ~~~
@@ -215,12 +217,12 @@ import miniirc
 # Not required, however this makes sure miniirc isn't insanely outdated.
 assert miniirc.ver >= (1,0,0)
 
-@miniirc.Handler('PRIVMSG', 'NOTICE')
+@miniirc.Handler('PRIVMSG', 'NOTICE', colon=True)
 def handler(irc, hostmask, args):
     print(hostmask[0], 'sent a message to', args[0], 'with content', args[1])
     # nickname sent a message to #channel with content :Hello, world!
 
-@miniirc.CmdHandler('PRIVMSG', 'NOTICE', colon = False)
+@miniirc.CmdHandler('PRIVMSG', 'NOTICE', colon=False)
 def cmdhandler(irc, command, hostmask, args):
     print(hostmask[0], 'sent a', command, 'to', args[0], 'with content',
         args[1])
