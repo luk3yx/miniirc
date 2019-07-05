@@ -256,7 +256,7 @@ class IRC:
         self.quote('NICK', self.nick, force=True)
         atexit.register(self.disconnect)
         self.debug('Starting main loop...')
-        self._pinged = False
+        self._sasl = self._pinged = False
         self.main()
 
     # An easier way to disconnect
@@ -547,7 +547,6 @@ def _handler(irc, hostmask, args):
       args[-1].upper().split(',')):
         irc.quote('AUTHENTICATE PLAIN', force=True)
     else:
-        irc._sasl = False
         irc.quote('AUTHENTICATE *', force=True)
         irc.finish_negotiation('sasl')
 
@@ -596,9 +595,7 @@ def _handler(irc, hostmask, args):
 @Handler('IRCv3 oragono.io/maxline-2')
 def _handler(irc, hostmask, args):
     try:
-        msglen = int(args[-1])
-        assert msglen > 512
-        irc.msglen = msglen
+        irc.msglen = max(int(args[-1]), 512)
     except:
         pass
 
