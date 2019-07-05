@@ -50,7 +50,11 @@ irc = miniirc.IRC(ip, port, nick, channels=None, *, ssl=None, ident=None, realna
 | `me(target, *msg, tags=None)`        | Sends a `/me` (`CTCP ACTION`) to `target`.  |
 | `msg(target, *msg, tags=None)`       | Sends a `PRIVMSG` to `target`.              |
 | `notice(target, *msg, tags=None)`    | Sends a `NOTICE` to `target`.               |
-| `quote(*msg, force=None, tags=None)` | Sends a raw message to IRC, use `force=True` to send while disconnected. Do not send multiple commands in one `irc.quote()`, as the newlines will be stripped and it will be sent as one command. The `tags` parameter optionally allows you to add a `dict` with IRCv3 client tags (all starting in `+`), and will not be sent to IRC servers that do not support client tags. |
+| `quote(*msg, force=False, tags=None)` | Sends a raw message to IRC, use `force=True` to send while disconnected. Do not send multiple commands in one `irc.quote()`, as the newlines will be stripped and it will be sent as one command. The `tags` parameter optionally allows you to add a `dict` with IRCv3 client tags (all starting in `+`), and will not be sent to IRC servers that do not support client tags. |
+
+*Note that if `force=False` on `irc.quote` (or `irc.msg` etc is called) while
+miniirc is not connected, messages will be temporarily stored and then sent
+once miniirc is connected.*
 
 ## Variables
 
@@ -136,9 +140,9 @@ def handler(irc, hostmask, tags, args):
 #### IRCv3 capabilities
 
 You can handle IRCv3 capabilities before connecting using a handler.
-You must use `force = True` on any `irc.quote()` called here, as when this is
-called, miniirc has not yet connected. Do not use the `colon` argument for
-`Handler` when creating these handlers to avoid unexpected side-effects.
+You must use `force=True` on any `irc.quote()` called here, as when this is
+called, miniirc may not yet be fully connected. Do not use the `colon` argument
+for `Handler` when creating these handlers to avoid unexpected side-effects.
 
 ~~~py
 import miniirc
