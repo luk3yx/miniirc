@@ -188,7 +188,7 @@ class IRC:
             tags = msg[0]
             msg  = msg[1:]
         if type(tags) != dict or 'message-tags' not in self.active_caps or \
-          'draft/message-tags-0.2' not in self.active_caps:
+                'draft/message-tags-0.2' not in self.active_caps:
             tags = None
         if self.connected or force:
             self.debug('>3> ' + str(tags) if tags else '>>>', *msg)
