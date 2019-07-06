@@ -62,13 +62,11 @@ class _Logfile:
 class IRC:
     connected: Optional[bool] = None
     debug_file: Optional[Union[io.TextIOWrapper, _Logfile]] = ...
-    sendq: Optional[List[tuple]] = None
     msglen: int = 512
     _main_lock: Optional[threading.Thread] = None
     _sasl: bool = False
     _unhandled_caps: Optional[set] = None
 
-    sock: socket.socket
     ip: str
     port: int
     nick: str
