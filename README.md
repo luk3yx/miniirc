@@ -68,7 +68,11 @@ once miniirc is connected.*
 
 ## Handlers
 
-Handlers are `@-rules` called in their own thread when their respective IRC event(s) is/are received. Handlers may be global (`@miniirc.handler`) or local (`@miniirc.IRC().handler`) to a certain IRC connection.
+`miniirc.Handler` and `miniirc.CmdHandler` are function decorators that add
+functions to an event handler list. Functions in this list are called in their
+own thread when their respective IRC event(s) is/are received. Handlers may
+work on every IRC object in existence (`@miniirc.handler`) or only on
+specific IRC objects (`@miniirc.IRC().handler`).
 
 The basic syntax for a handler is as followed, where `*events` is a list of events (`PRIVMSG`, `NOTICE`, etc) are called.
 
@@ -95,6 +99,11 @@ Recommendations when using handlers:
     converted to a string, every event is converted to a string internally.
  - Not specifying the [`ircv3`](#ircv3-tags) parameter when it is not required
     prevents a redundant `dict` from being created.
+ - To add handlers to a specific `IRC` object and not every one in existence,
+    use `irc.Handler` and `irc.CmdHandler` instead. If you want to create a
+    `Bot` or `Client` class and automatically add handlers to `IRC` objects
+    created inside it, see
+    [making existing functions handlers](#making-existing-functions-handlers).
 
 ### Hostmask object
 
@@ -124,9 +133,9 @@ creating a wrapper function for every class instance.
 #### IRCv3 tags
 
 If you want your handler to support IRCv3 message tags, you need to add
-`ircv3=True` to the `Handler` at-rule. You will need to add a `tags` parameter
-to your function after `hostmask`. IRCv3 tags are sent to the handlers as
-`dict`s, with values of either strings or `True`.
+`ircv3=True` to the `Handler` or `CmdHandler` decorator. You will need to add a
+`tags` parameter to your function after `hostmask`. IRCv3 tags are sent to the
+handlers as `dict`s, with values of either strings or `True`.
 
 *miniirc will automatically un-escape IRCv3 tag values.*
 
