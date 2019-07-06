@@ -274,6 +274,16 @@ Python 3.3), please open an issue or pull request on
 [GitHub](https://github.com/luk3yx/miniirc/issues) or
 [GitLab](https://gitlab.com/luk3yx/miniirc/issues).
 
+## Deprecations
+
+miniirc v2.0.0 may never be released, however if it is the following breaking
+changes will be made:
+
+ - The `colon` keyword argument to `Handler` and `CmdHandler` will default to
+    `False` instead of `True`.
+ - Internal-only attributes `irc.sock` and `irc.sendq` (please do not use this)
+    will be renamed. Again, please do not use these.
+
 ## Working examples/implementations
 
 Here is a list of some (open-source) bots using miniirc, in alphabetial order:
