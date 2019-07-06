@@ -281,8 +281,8 @@ changes will be made:
 
  - The `colon` keyword argument to `Handler` and `CmdHandler` will default to
     `False` instead of `True`.
- - Internal-only attributes `irc.sock` and `irc.sendq` (please do not use this)
-    will be renamed. Again, please do not use these.
+ - Internal-only attributes `irc.sock` and `irc.sendq` (please do not use
+    these) will be renamed. Again, please do not use these.
 
 ## Working examples/implementations
 
