@@ -228,7 +228,7 @@ handler will be called many times while connecting (and once connected).
 import miniirc
 
 # Not required, however this makes sure miniirc isn't insanely outdated.
-assert miniirc.ver >= (1,0,0)
+assert miniirc.ver >= (1,4,0)
 
 @miniirc.Handler('PRIVMSG', 'NOTICE', colon=True)
 def handler(irc, hostmask, args):
@@ -283,6 +283,9 @@ changes will be made:
     `False` instead of `True`.
  - Internal-only attributes `irc.sock` and `irc.sendq` (please do not use
     these) will be renamed. Again, please do not use these.
+ - Unspecified hostmasks will be an empty string instead of the command. Don't
+    rely on this "feature" if possible, simply ignore the hostmask if you do
+    not need it.
 
 ## Working examples/implementations
 
