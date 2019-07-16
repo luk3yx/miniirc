@@ -8,8 +8,8 @@
 import atexit, errno, threading, time, socket, ssl, sys
 
 # The version string and tuple
-ver     = (1,4,0)
-version = 'miniirc IRC framework v1.4.0'
+ver     = (1,4,1)
+version = 'miniirc IRC framework v1.4.1'
 
 # __all__ and _default_caps
 __all__ = ['CmdHandler', 'Handler', 'IRC']
@@ -141,7 +141,7 @@ def _dict_to_tags(tags):
     for tag in tags:
         if tags[tag]:
             etag = _escape_tag(tag).replace('=', '-')
-            if type(tags[tag]) == str:
+            if isinstance(tags[tag], str):
                 etag += '=' + _escape_tag(tags[tag])
             etag = (etag + ';').encode('utf-8')
             if len(res) + len(etag) > 4094:
@@ -187,10 +187,11 @@ class IRC:
         if not tags and len(msg) > 0 and isinstance(msg[0], dict):
             tags = msg[0]
             msg  = msg[1:]
-        if type(tags) != dict or 'message-tags' not in self.active_caps or \
-                'draft/message-tags-0.2' not in self.active_caps:
-            tags = None
         if self.connected or force:
+            if not isinstance(tags, dict) \
+                    or ('message-tags' not in self.active_caps
+                    and 'draft/message-tags-0.2' not in self.active_caps):
+                tags = None
             self.debug('>3> ' + str(tags) if tags else '>>>', *msg)
             msg = ' '.join(msg).replace('\r', ' ').replace('\n', ' ').encode(
                 'utf-8')[:self.msglen - 2]
@@ -263,6 +264,7 @@ class IRC:
     def disconnect(self, msg=None, *, auto_reconnect=False):
         self.persist   = auto_reconnect and self.persist
         self.connected = None
+        self.active_caps.clear()
         msg            = msg or self.quit_message
         atexit.unregister(self.disconnect)
         self._unhandled_caps = None
@@ -375,8 +377,11 @@ class IRC:
 
                 if len(line) > 0:
                     self.debug('<<<', line)
-                    result = self._parse(line)
-                    if type(result) == tuple and len(result) == 4:
+                    try:
+                        result = self._parse(line)
+                    except:
+                        result = None
+                    if isinstance(result, tuple) and len(result) == 4:
                         self._handle(*result)
                     else:
                         self.debug('Ignored message:', line)
