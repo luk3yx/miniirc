@@ -92,8 +92,7 @@ def ircv3_message_parser(msg):
 
     # Process IRCv3 tags
     if n[0].startswith('@'):
-        tags = _tags_to_dict(n[0][1:])
-        del n[0]
+        tags = _tags_to_dict(n.pop(0)[1:])
     else:
         tags = {}
 
