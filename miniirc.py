@@ -100,10 +100,10 @@ def ircv3_message_parser(msg):
     if n[0].startswith(':'):
         while len(n) < 2:
             n.append('')
-        hostmask = n[0][1:].split('!')
+        hostmask = n[0][1:].split('!', 1)
         if len(hostmask) < 2:
             hostmask.append(hostmask[0])
-        i = hostmask[1].split('@')
+        i = hostmask[1].split('@', 1)
         if len(i) < 2:
             i.append(i[0])
         hostmask = (hostmask[0], i[0], i[1])
