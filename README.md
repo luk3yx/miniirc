@@ -286,6 +286,10 @@ changes will be made:
  - Unspecified hostmasks will be an empty string instead of the command. Don't
     rely on this "feature" if possible, simply ignore the hostmask if you do
     not need it.
+ - `irc.ns_identity` may be stored as a tuple instead of a string, for example
+    `('username', 'password with spaces')` instead of
+    `'username password with spaces'`. Both formats are currently accepted and
+    will be accepted in the `ns_identity` keyword argument.
 
 ## Working examples/implementations
 
