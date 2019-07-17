@@ -281,8 +281,8 @@ changes will be made:
 
  - The `colon` keyword argument to `Handler` and `CmdHandler` will default to
     `False` instead of `True`.
- - Internal-only attributes `irc.sock` and `irc.sendq` (please do not use
-    these) will be renamed. Again, please do not use these.
+ - Internal-only attributes `irc.handlers`, `irc.sock`, and `irc.sendq`
+    (please do not use these) will be renamed. Again, please do not use these.
  - Unspecified hostmasks will be an empty string instead of the command. Don't
     rely on this "feature" if possible, simply ignore the hostmask if you do
     not need it.
