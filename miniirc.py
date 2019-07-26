@@ -344,10 +344,10 @@ class IRC:
                         raw += self.sock.recv(4096).replace(b'\r', b'\n')
                     except socket.timeout:
                         if self._pinged:
-                            raise Exception('Ping timeout!')
+                            raise
                         else:
-                            self.quote('PING', ':miniirc-ping', force=True)
                             self._pinged = True
+                            self.quote('PING', ':miniirc-ping', force=True)
                     except socket.error as e:
                         if e.errno != errno.EWOULDBLOCK:
                             raise
