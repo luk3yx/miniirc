@@ -264,12 +264,15 @@ class IRC:
         self.persist   = auto_reconnect and self.persist
         self.connected = None
         self.active_caps.clear()
-        msg            = msg or self.quit_message
         atexit.unregister(self.disconnect)
         self._unhandled_caps = None
         try:
-            self.quote('QUIT :' + str(msg), force=True)
-            self.sock.shutdown()
+            self.quote('QUIT :' + str(msg or self.quit_message), force=True)
+            self.sock.shutdown(socket.SHUT_RDWR)
+        except:
+            pass
+        try:
+            self.sock.close()
         except:
             pass
 

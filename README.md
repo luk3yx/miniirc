@@ -290,6 +290,8 @@ changes will be made:
     `('username', 'password with spaces')` instead of
     `'username password with spaces'`. Both formats are currently accepted and
     will be accepted in the `ns_identity` keyword argument.
+ - Python 3.4 support *may* be dropped. If you are using Python 3.4, I
+    recommend updating to a more recent version of Python.
 
 ## Working examples/implementations
 
