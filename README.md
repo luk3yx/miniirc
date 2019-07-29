@@ -29,13 +29,15 @@ irc = miniirc.IRC(ip, port, nick, channels=None, *, ssl=None, ident=None, realna
 | `realname`    | The realname to use, defaults to `nick` as well.          |
 | `persist`     | Whether to automatically reconnect.                       |
 | `debug`       | Enables debug mode, prints all IRC messages. This can also be a file-like object (with write mode enabled) if you want debug messages to be written into a file instead of being printed to stdout, or a function (for example `logging.debug`). |
-| `ns_identity` | The NickServ account to use (`<user> <password>`). This can be a tuple or list since miniirc v1.2.0, however for backwards compatibility it should probably be a string. |
+| `ns_identity` | The NickServ account to use (`<user> <password>`). This can be a tuple or list since miniirc v1.2.0. |
 | `auto_connect`| Runs `.connect()` straight away.                          |
 | `ircv3_caps`  | A set() of additional IRCv3 capabilities to request. SASL is auto-added if `ns_identity` is specified. |
 | `connect_modes` | A mode string (for example `'+B'`) of UMODEs to set when connected. |
 | `quit_message`| Sets the default quit message. This can be modified per-quit with `irc.disconnect()`. |
 | `ping_interval` | If no packets are sent or received for this amount of seconds, miniirc will send a `PING`, and if no reply is sent, after the same timeout, miniirc will attempt to reconnect. Set to `None` to disable. |
 | `verify_ssl`  | Verifies TLS/SSL certificates. Disabling this is not recommended. If you have trouble with certificate verification, try running `pip3 install certifi` first. |
+
+*The only mandatory parameters are `ip`, `port`, and `nick`.*
 
 ## Functions
 
@@ -54,7 +56,8 @@ irc = miniirc.IRC(ip, port, nick, channels=None, *, ssl=None, ident=None, realna
 
 *Note that if `force=False` on `irc.quote` (or `irc.msg` etc is called) while
 miniirc is not connected, messages will be temporarily stored and then sent
-once miniirc is connected.*
+once miniirc is connected. Setting `force=True` will throw errors if miniirc is
+completely disconnected (`irc.connected` is `None`).*
 
 ## Variables
 
@@ -62,9 +65,15 @@ once miniirc is connected.*
 
 | Variable      | Description                                               |
 | ------------- | --------------------------------------------------------  |
+| `active_caps` | A `set` of IRCv3 capabilities that have been successfully negotiated with the IRC server. This is empty while disconnected. |
+| `connected`   | A boolean (or `None`), `True` when miniirc is connected, `False` when miniirc is connecting, and `None` when miniirc is not connected. |
 | `isupport`    | *New in 1.1.0.* A `dict` with values (not necessarily strings) from `ISUPPORT` messages sent to the client. |
 | `msglen`      | *New in 1.1.0.* The maximum length (in bytes) of messages (including `\r\n`). This is automatically changed if the server supports the `oragono.io/maxline-2` capability. |
 | `nick`        | The current nickname.                                     |
+
+The following arguments passed to `miniirc.IRC` are also available: `ip`,
+`port`, `channels`, `ssl`, `ident`, `realname`, `persist`, `connect_modes`,
+`quit_message`, `ping_interval`, `verify_ssl`.
 
 ## Handlers
 
@@ -90,7 +99,8 @@ def handler(irc, hostmask, args):
     pass
 ~~~
 
-Recommendations when using handlers:
+#### Recommendations when using handlers:
+
  - If you don't need support for miniirc <1.4.0 and are parsing the last
     parameter, setting `colon` to `False` is strongly recommended. If the
     `colon` parameter is omitted, it defaults to `True`, however this may change
@@ -228,7 +238,7 @@ handler will be called many times while connecting (and once connected).
 import miniirc
 
 # Not required, however this makes sure miniirc isn't insanely outdated.
-assert miniirc.ver >= (1,4,0)
+assert miniirc.ver >= (1,4,1)
 
 @miniirc.Handler('PRIVMSG', 'NOTICE', colon=True)
 def handler(irc, hostmask, args):
@@ -262,11 +272,11 @@ the time of writing this) under active development.
 
 ## Python version support
 
- - Python 2 does not work and will (probably) never work with miniirc. If you MUST use Python 2, you can use the (probably outdated and bug-filled) python2 branch.
+ - Python 2 does not work and will (probably) never work with miniirc. If you
+    MUST use Python 2, you could try manually porting miniirc.
  - Python 3.3 and below probably won't work, and fixes will not be added unless
     they are very trivial.
- - Python 3.4 is not tested as thoroughly, however should work (and does with
-    version 1.2.3).
+ - Python 3.4 is not tested as thoroughly, however should work.
  - Python 3.5 and above should work with the latest stable version of miniirc.
 
 If there is a bug/error in Python 3.4 or newer (or a very trivial fix for
@@ -274,28 +284,31 @@ Python 3.3), please open an issue or pull request on
 [GitHub](https://github.com/luk3yx/miniirc/issues) or
 [GitLab](https://gitlab.com/luk3yx/miniirc/issues).
 
+*If you are using Python 3.4 or an older version of Python, I strongly
+recommend updating.*
+
 ## Deprecations
 
 miniirc v2.0.0 may never be released, however if it is the following breaking
 changes will be made:
 
- - The `colon` keyword argument to `Handler` and `CmdHandler` will default to
-    `False` instead of `True`.
  - Internal-only attributes `irc.handlers`, `irc.sock`, and `irc.sendq`
     (please do not use these) will be renamed. Again, please do not use these.
- - Unspecified hostmasks will be an empty string instead of the command. Don't
-    rely on this "feature" if possible, simply ignore the hostmask if you do
-    not need it.
  - `irc.ns_identity` may be stored as a tuple instead of a string, for example
     `('username', 'password with spaces')` instead of
     `'username password with spaces'`. Both formats are currently accepted and
     will be accepted in the `ns_identity` keyword argument.
  - Python 3.4 support *may* be dropped. If you are using Python 3.4, I
     recommend updating to a more recent version of Python.
+ - The `colon` keyword argument to `Handler` and `CmdHandler` will default to
+    `False` instead of `True`.
+ - Unspecified hostmasks will be an empty string instead of the command. Don't
+    rely on this "feature" if possible, simply ignore the hostmask if you do
+    not need it.
 
 ## Working examples/implementations
 
-Here is a list of some (open-source) bots using miniirc, in alphabetial order:
+Here is a list of some (open-source) bots using miniirc, in alphabetical order:
 
  - [irc-rss-feed-bot] - Posts RSS entry titles and shortened URLs to IRC
     channels. *Python 3.7+*
@@ -305,6 +318,10 @@ Here is a list of some (open-source) bots using miniirc, in alphabetial order:
     *[GitHub](https://github.com/luk3yx/lurklite) link.*
  - [stdinbot] - A very simple bot that dumps stdin to an IRC channel.
     *[GitHub](https://github.com/luk3yx/stdinbot) link.*
+
+*Want to add your own bot/client to this list? Open an issue on
+[GitHub](https://github.com/luk3yx/miniirc/issues) or
+[GitLab](https://github.com/luk3yx/miniirc/issues).*
 
 [irc-rss-feed-bot]:  https://github.com/impredicative/irc-rss-feed-bot
 [irc-url-title-bot]: https://github.com/impredicative/irc-url-title-bot
