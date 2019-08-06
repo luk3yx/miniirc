@@ -196,7 +196,11 @@ class IRC:
                 'utf-8')[:self.msglen - 2]
             if tags and len(tags) > 0:
                 msg = _dict_to_tags(tags) + msg
-            self.sock.sendall(msg + b'\r\n')
+            self._send_lock.acquire()
+            try: # Apparently try/finally is faster than "with".
+                self.sock.sendall(msg + b'\r\n')
+            finally:
+                self._send_lock.release()
         else:
             self.debug('>Q>', *msg)
             if not self.sendq:
@@ -442,7 +446,8 @@ class IRC:
 
         # Add handlers and set the default message parser
         self.change_parser()
-        self.handlers       = {}
+        self.handlers   = {}
+        self._send_lock = threading.Lock()
         if ssl == None and self.port == 6697:
             self.ssl = True
 
