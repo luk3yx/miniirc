@@ -111,7 +111,7 @@ def ircv3_message_parser(msg):
     else:
         cmd      = n[0]
         hostmask = (cmd, cmd, cmd)
-        n.insert(0, ':??!??@??')
+        n.insert(0, '')
 
     # Get the command and arguments
     args = []
@@ -341,43 +341,41 @@ class IRC:
     # The main loop
     def _main(self):
         self.debug('Main loop running!')
+        buffer = b''
         while True:
-            raw = b''
-            c = 0
-            while not raw.endswith(b'\n'):
-                c += 1
+            try:
+                assert len(buffer) < 65535, 'Very long line detected!'
                 try:
+                    raw = self.sock.recv(8192).replace(b'\r', b'\n')
+                    assert raw
+                    buffer += raw
+                except socket.timeout:
+                    if self._pinged:
+                        raise
+                    else:
+                        self._pinged = True
+                        self.quote('PING', ':miniirc-ping', force=True)
+                except socket.error as e:
+                    if e.errno != errno.EWOULDBLOCK:
+                        raise
+            except Exception as e:
+                self.debug('Lost connection! ', repr(e))
+                self.disconnect(auto_reconnect=True)
+                while self.persist:
+                    time.sleep(5)
+                    self.debug('Reconnecting...')
+                    self._main_lock = None
                     try:
-                        raw += self.sock.recv(4096).replace(b'\r', b'\n')
-                    except socket.timeout:
-                        if self._pinged:
-                            raise
-                        else:
-                            self._pinged = True
-                            self.quote('PING', ':miniirc-ping', force=True)
-                    except socket.error as e:
-                        if e.errno != errno.EWOULDBLOCK:
-                            raise
+                        self.connect()
+                    except:
+                        self.debug('Failed to reconnect!')
+                        self.connected = None
+                    else:
+                        return
+                return
 
-                    if c > 1000:
-                        self.debug('Waited 1,000 times on the socket!')
-                        raise Exception('Spam detected')
-                except Exception as e:
-                    self.debug('Lost connection! ', repr(e))
-                    self.disconnect(auto_reconnect=True)
-                    while self.persist:
-                        time.sleep(5)
-                        self.debug('Reconnecting...')
-                        self._main_lock = None
-                        try:
-                            self.connect()
-                        except:
-                            self.debug('Failed to reconnect!')
-                            self.connected = None
-                        else:
-                            return
-                    return
-            raw = raw.split(b'\n')
+            raw = buffer.split(b'\n')
+            buffer = raw.pop()
             for line in raw:
                 line = line.decode('utf-8', 'replace')
 
@@ -391,6 +389,7 @@ class IRC:
                         self._handle(*result)
                     else:
                         self.debug('Ignored message:', line)
+            del raw
 
     # Thread the main loop
     def main(self):
