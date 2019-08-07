@@ -27,7 +27,7 @@ except ImportError:
 _global_handlers = {}
 
 def _add_handler(handlers, events, ircv3, cmd_arg, colon):
-    if len(events) == 0:
+    if not events:
         if not cmd_arg:
             raise TypeError('Handler() called without arguments.')
         events = (None,)
@@ -183,7 +183,7 @@ class IRC:
 
     # Send raw messages
     def quote(self, *msg, force=None, tags=None):
-        if not tags and len(msg) > 0 and isinstance(msg[0], dict):
+        if not tags and msg and isinstance(msg[0], dict):
             tags = msg[0]
             msg  = msg[1:]
         if self.connected or force:
@@ -194,7 +194,7 @@ class IRC:
             self.debug('>3> ' + str(tags) if tags else '>>>', *msg)
             msg = ' '.join(msg).replace('\r', ' ').replace('\n', ' ').encode(
                 'utf-8')[:self.msglen - 2]
-            if tags and len(tags) > 0:
+            if tags:
                 msg = _dict_to_tags(tags) + msg
             self._send_lock.acquire()
             try: # Apparently try/finally is faster than "with".
@@ -379,7 +379,7 @@ class IRC:
             for line in raw:
                 line = line.decode('utf-8', 'replace')
 
-                if len(line) > 0:
+                if line:
                     self.debug('<<<', line)
                     try:
                         result = self._parse(line)
@@ -468,7 +468,7 @@ def _handler(irc, hostmask, args):
     if not irc._sasl and irc.ns_identity:
         irc.debug('Logging in (no SASL, aww)...')
         irc.msg('NickServ', 'identify ' + irc.ns_identity)
-    if len(irc.channels) > 0:
+    if irc.channels:
         irc.debug('*** Joining channels...', irc.channels)
         irc.quote('JOIN', ','.join(irc.channels))
 
@@ -483,7 +483,7 @@ def _handler(irc, hostmask, args):
 
 @Handler('PONG', colon=False)
 def _handler(irc, hostmask, args):
-    if len(args) > 0 and args[-1] == 'miniirc-ping':
+    if args and args[-1] == 'miniirc-ping':
         irc._pinged = False
 
 @Handler('432', '433')
@@ -533,9 +533,9 @@ def _handler(irc, hostmask, args):
                     irc._handle_cap(cap)
                 else:
                     req.add(cap)
-        if len(req) > 0:
+        if req:
             irc.quote('CAP REQ', ':' + ' '.join(req), force=True)
-        elif cmd == 'LS' and len(irc._unhandled_caps) == 0 and args[2] != '*':
+        elif cmd == 'LS' and not irc._unhandled_caps and args[2] != '*':
             irc._unhandled_caps = None
             irc.quote('CAP END', force=True)
     elif cmd == 'ACK':
@@ -563,7 +563,7 @@ def _handler(irc, hostmask, args):
 
 @Handler('AUTHENTICATE', colon=False)
 def _handler(irc, hostmask, args):
-    if len(args) > 0 and args[0] == '+':
+    if args and args[0] == '+':
         from base64 import b64encode
         irc._sasl = True
         pw = irc.ns_identity.split(' ', 1)
