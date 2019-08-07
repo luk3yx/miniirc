@@ -412,7 +412,7 @@ class IRC:
         self.port           = int(port)
         self.nick           = nick
         if isinstance(channels, str):
-            channels = (channels,)
+            channels = map(str.lstrip, channels.split(','))
         self.channels       = set(channels or ())
         self.ident          = ident    or nick
         self.realname       = realname or nick
