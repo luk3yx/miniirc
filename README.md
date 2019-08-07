@@ -80,8 +80,8 @@ The following arguments passed to `miniirc.IRC` are also available: `ip`,
 `miniirc.Handler` and `miniirc.CmdHandler` are function decorators that add
 functions to an event handler list. Functions in this list are called in their
 own thread when their respective IRC event(s) is/are received. Handlers may
-work on every IRC object in existence (`@miniirc.handler`) or only on
-specific IRC objects (`@miniirc.IRC().handler`).
+work on every IRC object in existence (`miniirc.Handler`) or only on
+specific IRC objects (`irc.Handler`).
 
 The basic syntax for a handler is as followed, where `*events` is a list of events (`PRIVMSG`, `NOTICE`, etc) are called.
 
