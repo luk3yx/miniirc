@@ -117,7 +117,12 @@ def handler(irc, hostmask, args):
 
 ### Hostmask object
 
-Hostmasks are tuples with the format `('user', 'ident', 'hostname')`. If `ident` and `hostname` aren't sent from the server, they will be filled in with the previous value. If a command is received without a hostmask, all the `hostmask` parameters will be set to the name of the command.
+Hostmasks are tuples with the format `('user', 'ident', 'hostname')`. If `ident`
+and `hostname` aren't sent from the server, they will be filled in with the
+previous value. If a command is received without a hostmask, all the `hostmask`
+elements will be set to the name of the command. This is deprecated, however,
+and if/when miniirc v2.0.0 is released the `hostmask` elements will be set to
+empty strings.
 
 ### Making existing functions handlers
 
