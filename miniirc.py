@@ -8,8 +8,9 @@
 import atexit, errno, threading, time, socket, ssl, sys
 
 # The version string and tuple
-ver     = (1,4,1)
+ver = __version_info__ = (1,4,1)
 version = 'miniirc IRC framework v1.4.1'
+__version__ = '1.4.1'
 
 # __all__ and _default_caps
 __all__ = ['CmdHandler', 'Handler', 'IRC']
@@ -441,7 +442,7 @@ class IRC:
             self.debug_file = _Logfile(debug)
 
         # Add IRCv3 capabilities.
-        if self.ns_identity:    self.ircv3_caps.add('sasl')
+        if self.ns_identity: self.ircv3_caps.add('sasl')
 
         # Add handlers and set the default message parser
         self.change_parser()
