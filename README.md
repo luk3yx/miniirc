@@ -281,16 +281,24 @@ the time of writing this) under active development.
     MUST use Python 2, you could try manually porting miniirc.
  - Python 3.3 and below probably won't work, and fixes will not be added unless
     they are very trivial.
- - Python 3.4 is not tested as thoroughly, however should work.
+ - Python 3.4, although not recommended, should work, however it is not tested
+    as thoroughly.
  - Python 3.5 and above should work with the latest stable version of miniirc.
 
-If there is a bug/error in Python 3.4 or newer (or a very trivial fix for
-Python 3.3), please open an issue or pull request on
-[GitHub](https://github.com/luk3yx/miniirc/issues) or
+If there is a bug/error in Python 3.4 or newer, please open an issue or pull
+request on [GitHub](https://github.com/luk3yx/miniirc/issues) or
 [GitLab](https://gitlab.com/luk3yx/miniirc/issues).
 
 *If you are using Python 3.4 or an older version of Python, I strongly
 recommend updating.*
+
+## miniirc_extras
+
+If you want more advanced(-ish) features such as user tracking, you can use
+[miniirc_extras](https://pypi.org/project/miniirc-extras/)
+([GitHub](https://github.com/luk3yx/miniirc_extras),
+[GitLab](https://gitlab.com/luk3yx/miniirc_extras)). Note that miniirc_extras
+is still in beta and there will be breaking API changes in the future.
 
 ## Deprecations
 
