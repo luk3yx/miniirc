@@ -8,9 +8,9 @@
 import atexit, errno, threading, time, socket, ssl, sys
 
 # The version string and tuple
-ver = __version_info__ = (1,4,2, 'rc', 0)
-version = 'miniirc IRC framework v1.4.2rc0'
-__version__ = '1.4.2rc0'
+ver = __version_info__ = (1,4,2)
+version = 'miniirc IRC framework v1.4.2'
+__version__ = '1.4.2'
 
 # __all__ and _default_caps
 __all__ = ['CmdHandler', 'Handler', 'IRC']
@@ -357,7 +357,7 @@ class IRC:
                     if e.errno != errno.EWOULDBLOCK:
                         raise
             except Exception as e:
-                self.debug('Lost connection! ', repr(e))
+                self.debug('Lost connection!', repr(e))
                 self.disconnect(auto_reconnect=True)
                 while self.persist:
                     time.sleep(5)
