@@ -23,7 +23,7 @@ irc = miniirc.IRC(ip, port, nick, channels=None, *, ssl=None, ident=None, realna
 | `ip`          | The IP/hostname of the IRC server to connect to.          |
 | `port`        | The port to connect to.                                   |
 | `nick`        | The nickname of the bot.                                  |
-| `channels`    | The channels to join on connect. This can be an iterable containing strings (list, set, etc), or (since v1.4.0) a string. |
+| `channels`    | The channels to join on connect. This can be an iterable containing strings (list, set, etc), or (since v1.4.0) a string. Attempting to join multiple channels with a string will create unintended side-effects, and should be avoided until miniirc v1.5.0. |
 | `ssl`         | Enable TLS/SSL. If `None`, TLS/SSL is disabled unless the port is `6697`. |
 | `ident`       | The ident to use, defaults to `nick`.                     |
 | `realname`    | The realname to use, defaults to `nick` as well.          |
