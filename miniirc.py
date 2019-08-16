@@ -33,7 +33,7 @@ def _add_handler(handlers, events, ircv3, cmd_arg, colon):
             raise TypeError('Handler() called without arguments.')
         events = (None,)
 
-    def _finish_handler(func):
+    def add_handler(func):
         for event in events:
             if event is not None:
                 event = str(event).upper()
@@ -43,15 +43,12 @@ def _add_handler(handlers, events, ircv3, cmd_arg, colon):
                 handlers[event].append(func)
 
         f = getattr(func, '__func__', func)
-        if ircv3:
-            f.miniirc_ircv3 = True
-        if cmd_arg:
-            f.miniirc_cmd_arg = True
-        if colon:
-            f.miniirc_colon = True
+        if ircv3:   f.miniirc_ircv3     = True
+        if cmd_arg: f.miniirc_cmd_arg   = True
+        if colon:   f.miniirc_colon     = True
         return func
 
-    return _finish_handler
+    return add_handler
 
 def Handler(*events, ircv3=False, colon=True):
     return _add_handler(_global_handlers, events, ircv3, False, colon)
@@ -608,7 +605,7 @@ def _handler(irc, hostmask, args):
 def _handler(irc, hostmask, args):
     try:
         irc.msglen = max(int(args[-1]), 512)
-    except:
+    except ValueError:
         pass
 
     irc.finish_negotiation(args[0])
