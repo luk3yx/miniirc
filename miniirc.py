@@ -553,7 +553,7 @@ def _handler(irc, hostmask, args):
 @Handler('IRCv3 SASL')
 def _handler(irc, hostmask, args):
     if irc.ns_identity and (len(args) < 2 or 'PLAIN' in
-      args[-1].upper().split(',')):
+            args[-1].upper().split(',')):
         irc.quote('AUTHENTICATE PLAIN', force=True)
     else:
         irc.quote('AUTHENTICATE *', force=True)
