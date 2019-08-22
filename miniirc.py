@@ -14,7 +14,7 @@ __version__ = '1.4.2'
 
 # __all__ and _default_caps
 __all__ = ['CmdHandler', 'Handler', 'IRC']
-_default_caps = {'account-tag', 'cap-notify', 'chghost',
+_default_caps = {'account-tag', 'away-notify', 'cap-notify', 'chghost',
     'draft/message-tags-0.2', 'invite-notify', 'message-tags',
     'oragono.io/maxline-2', 'server-time', 'sts'}
 
