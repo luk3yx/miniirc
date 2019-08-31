@@ -318,6 +318,9 @@ changes will be made:
  - Unspecified hostmasks will be an empty string instead of the command. Don't
     rely on this "feature" if possible, simply ignore the hostmask if you do
     not need it.
+ - The `'surrogateescape'` encoding error handler may be used to avoid losing
+    data on invalid UTF-8 messages. See
+    [PEP 383](https://www.python.org/dev/peps/pep-0383/) for more information.
 
 ## Working examples/implementations
 
