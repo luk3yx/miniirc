@@ -8,6 +8,13 @@ Notes:
  - This changelog may contain typographical errors, it is still a
     work-in-progress.
 
+## Unreleased
+
+### Added
+
+ - `irc.send()`: `irc.send('PRIVMSG', '#channel with spaces', 'Test message')`
+    → `irc.quote('PRIVMSG', '#channel\xa0with\xa0spaces', ':Test message')`
+
 ## 1.4.2 - 2019-08-16
 
 ### Changed
