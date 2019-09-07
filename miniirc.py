@@ -8,9 +8,9 @@
 import atexit, errno, threading, time, socket, ssl, sys
 
 # The version string and tuple
-ver = __version_info__ = (1,4,2)
-version = 'miniirc IRC framework v1.4.2'
-__version__ = '1.4.2'
+ver = __version_info__ = (1,4,3, 'alpha', 0)
+version = 'miniirc IRC framework v1.4.3a0'
+__version__ = '1.4.3a0'
 
 # __all__ and _default_caps
 __all__ = ['CmdHandler', 'Handler', 'IRC']
@@ -584,21 +584,19 @@ def _handler(irc, hostmask, args):
         try:
             port = int(_tags_to_dict(args[1], ',')['port'])
         except:
-            port = None
-
-        if port:
-            persist = irc.persist
-            irc.disconnect()
-            irc.debug('NOTICE: An IRCv3 STS has been detected, the port will',
-                'be changed to', port, 'and TLS/SSL will be enabled.')
-            irc.port = port
-            irc.ssl  = True
-            time.sleep(1)
-            irc.connect()
-            irc.persist = persist
             return
 
-    irc.finish_negotiation('sts')
+        persist = irc.persist
+        irc.disconnect()
+        irc.debug('NOTICE: An IRCv3 STS has been detected, the port will',
+            'be changed to', port, 'and TLS/SSL will be enabled.')
+        irc.port = port
+        irc.ssl  = True
+        time.sleep(1)
+        irc.connect()
+        irc.persist = persist
+    else:
+        irc.finish_negotiation('sts')
 
 # Maximum line length
 @Handler('IRCv3 oragono.io/maxline-2')
