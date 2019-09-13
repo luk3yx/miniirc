@@ -166,7 +166,7 @@ class _Logfile:
 def _prune_arg(arg):
     if arg.startswith(':'):
         arg = '\u0703' + arg[1:]
-    return arg.replace(' ', '\xa0')
+    return arg.replace(' ', '\xa0').replace('\r', '\xa0').replace('\n', '\xa0')
 
 # Create the IRC class
 class IRC:
@@ -203,6 +203,8 @@ class IRC:
             self._send_lock.acquire()
             try: # Apparently try/finally is faster than "with".
                 self.sock.sendall(msg + b'\r\n')
+            except (AttributeError, BrokenPipeError):
+                pass
             finally:
                 self._send_lock.release()
         else:
@@ -243,10 +245,15 @@ class IRC:
 
     # The connect function
     def connect(self):
-        if self.connected != None:
-            self.debug('Already connected!')
-            return
-        self.connected = False
+        self._send_lock.acquire()
+        try:
+            if self.connected is not None:
+                self.debug('Already connected!')
+                return
+            self.connected = False
+        finally:
+            self._send_lock.release()
+
         self.debug('Connecting to', self.ip, 'port', self.port)
         addrinfo  = socket.getaddrinfo(self.ip, self.port, 0,
             socket.SOCK_STREAM)[0]
