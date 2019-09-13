@@ -92,6 +92,9 @@ class IRC:
     def quote(self, *msg: str, force: Optional[bool] = None,
         tags: Optional[Dict[str, Union[str, bool]]] = None) -> None: ...
 
+    def send(self, *msg: str, force: Optional[bool] = None,
+        tags: Optional[Dict[str, Union[str, bool]]] = None) -> None: ...
+
     # User-friendly msg, notice, and ctcp functions.
     def msg(self, target: str, *msg: str,
         tags: Optional[Dict[str, Union[str, bool]]] = None) -> None: ...

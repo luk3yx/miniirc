@@ -23,7 +23,7 @@ irc = miniirc.IRC(ip, port, nick, channels=None, *, ssl=None, ident=None, realna
 | `ip`          | The IP/hostname of the IRC server to connect to.          |
 | `port`        | The port to connect to.                                   |
 | `nick`        | The nickname of the bot.                                  |
-| `channels`    | The channels to join on connect. This can be an iterable containing strings (list, set, etc), or (since v1.4.0) a string. Attempting to join multiple channels with a string will create unintended side-effects, and should be avoided until miniirc v1.5.0. |
+| `channels`    | The channels to join on connect. This can be an iterable containing strings (list, set, etc), or (since v1.5.0) a comma-delimited string. |
 | `ssl`         | Enable TLS/SSL. If `None`, TLS/SSL is disabled unless the port is `6697`. |
 | `ident`       | The ident to use, defaults to `nick`.                     |
 | `realname`    | The realname to use, defaults to `nick` as well.          |
@@ -53,6 +53,7 @@ irc = miniirc.IRC(ip, port, nick, channels=None, *, ssl=None, ident=None, realna
 | `msg(target, *msg, tags=None)`       | Sends a `PRIVMSG` to `target`.              |
 | `notice(target, *msg, tags=None)`    | Sends a `NOTICE` to `target`.               |
 | `quote(*msg, force=False, tags=None)` | Sends a raw message to IRC, use `force=True` to send while disconnected. Do not send multiple commands in one `irc.quote()`, as the newlines will be stripped and it will be sent as one command. The `tags` parameter optionally allows you to add a `dict` with IRCv3 client tags (all starting in `+`), and will not be sent to IRC servers that do not support client tags. |
+| `send(*msg, force=False, tags=None)` | Similar to `irc.quote()`, however every positional argument is treated as a parameter, spaces are removed from every parameter except the last one, and a colon is automatically prepended to the last parameter. |
 
 *Note that if `force=False` on `irc.quote` (or `irc.msg` etc is called) while
 miniirc is not connected, messages will be temporarily stored and then sent

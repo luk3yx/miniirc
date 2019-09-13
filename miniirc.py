@@ -204,7 +204,8 @@ class IRC:
             try: # Apparently try/finally is faster than "with".
                 self.sock.sendall(msg + b'\r\n')
             except (AttributeError, BrokenPipeError):
-                pass
+                if force:
+                    raise
             finally:
                 self._send_lock.release()
         else:
