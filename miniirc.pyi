@@ -4,7 +4,12 @@
 
 import atexit, errno, io, threading, time, socket, ssl, sys
 from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Tuple, \
-    Union
+    Union, overload
+
+if sys.version_info >= (3, 8):
+    from typing import Literal
+else:
+    from typing_extensions import Literal
 
 # The version string and tuple
 ver: Tuple[int, int, int] = ...
@@ -26,15 +31,28 @@ except ImportError:
 # Create global handlers
 _global_handlers: Dict[str, Callable] = {}
 
-_add_handler_return = Callable[[Callable], Callable]
 def _add_handler(handlers, events, ircv3, cmd_arg, colon) \
-    -> _add_handler_return: ...
+    -> Callable[[Callable], Callable]: ...
 
-def Handler(*events: str, colon: bool = True, ircv3: bool = False) \
-    -> _add_handler_return: ...
+_handler_func_1 = Callable[['IRC', Tuple[str, str, str], List[str]], Any]
+_handler_func_2 = Callable[['IRC', Tuple[str, str, str],
+                            Dict[str, Union[str, bool]], List[str]], Any]
+@overload
+def Handler(*events: str, colon: bool = True, ircv3: Literal[False] = False) \
+    -> Callable[[_handler_func_1], _handler_func_1]: ...
+@overload
+def Handler(*events: str, colon: bool = True, ircv3: Literal[True]) \
+    -> Callable[[_handler_func_2], _handler_func_2]: ...
 
-def CmdHandler(*events: str, colon: bool = True, ircv3: bool = False) \
-    -> _add_handler_return: ...
+_handler_func_3 = Callable[['IRC', str, Tuple[str, str, str], List[str]], Any]
+_handler_func_4 = Callable[['IRC', str, Tuple[str, str, str],
+                            Dict[str, Union[str, bool]], List[str]], Any]
+@overload
+def CmdHandler(*events: str, colon: bool = True, ircv3: Literal[False] = False) \
+    -> Callable[[_handler_func_3], _handler_func_3]: ...
+@overload
+def CmdHandler(*events: str, colon: bool = True, ircv3: Literal[True]) \
+    -> Callable[[_handler_func_4], _handler_func_4]: ...
 
 # Parse IRCv3 tags
 ircv3_tag_escapes: Dict[str, str] = {':': ';', 's': ' ', 'r': '\r', 'n': '\n'}
@@ -109,11 +127,19 @@ class IRC:
         tags: Optional[Dict[str, Union[str, bool]]] = None) -> None: ...
 
     # Allow per-connection handlers
-    def Handler(self, *events: str, colon: bool = False,
-        ircv3: bool = False) -> _add_handler_return: ...
+    @overload
+    def Handler(*events: str, colon: bool = True, ircv3: Literal[False] = False) \
+        -> Callable[[_handler_func_1], _handler_func_1]: ...
+    @overload
+    def Handler(*events: str, colon: bool = True, ircv3: Literal[True]) \
+        -> Callable[[_handler_func_2], _handler_func_2]: ...
 
-    def CmdHandler(self, *events: str, colon: bool = False,
-        ircv3: bool = False) -> _add_handler_return: ...
+    @overload
+    def CmdHandler(*events: str, colon: bool = True, ircv3: Literal[False] = False) \
+        -> Callable[[_handler_func_3], _handler_func_3]: ...
+    @overload
+    def CmdHandler(*events: str, colon: bool = True, ircv3: Literal[True]) \
+        -> Callable[[_handler_func_4], _handler_func_4]: ...
 
     # The connect function
     def connect(self) -> None: ...
