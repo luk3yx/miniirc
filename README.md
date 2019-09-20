@@ -93,10 +93,10 @@ space however not interpreted as one).
 | ------------- | --------------------------------------------------------  |
 | `active_caps` | A `set` of IRCv3 capabilities that have been successfully negotiated with the IRC server. This is empty while disconnected. |
 | `connected`   | A boolean (or `None`), `True` when miniirc is connected, `False` when miniirc is connecting, and `None` when miniirc is not connected. |
-| `current_nick`| *New in v1.5.0.* The bot/client's current nickname. Do not modify this, and use this instead of `irc.nick` when getting the bot's current nickname for compatibility with miniirc v2.0.0. |
+| `current_nick`| *New in v1.5.0.* The bot/client's current nickname, currently an alias for `irc.nick`. Do not modify this, and use this instead of `irc.nick` when getting the bot's current nickname for compatibility with miniirc v2.0.0. |
 | `isupport`    | *New in v1.1.0.* A `dict` with values (not necessarily strings) from `ISUPPORT` messages sent to the client. |
 | `msglen`      | *New in v1.1.0.* The maximum length (in bytes) of messages (including `\r\n`). This is automatically changed if the server supports the `oragono.io/maxline-2` capability. |
-| `nick`        | The nickname to use when connecting to IRC. Until miniirc v2.0.0, you should only modify this while disconnected, as it is also updated with nickname changes. |
+| `nick`        | The nickname to use when connecting to IRC. Until miniirc v2.0.0, you should only modify this while disconnected, as it is currently automatically updated with nickname changes. |
 
 The following arguments passed to `miniirc.IRC` are also available: `ip`,
 `port`, `channels`, `ssl`, `ident`, `realname`, `persist`, `connect_modes`,
