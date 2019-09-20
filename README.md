@@ -50,8 +50,8 @@ irc = miniirc.IRC(ip, port, nick, channels=None, *, ssl=None, ident=None, realna
 | `disconnect(msg=..., *, auto_reconnect=False)`| Disconnects from the IRC server. `auto_reconnect` will be overriden by `self.persist` if set to `True`. |
 | `Handler(...)` | An event handler, see [Handlers](#handlers) for more info.|
 | `me(target, *msg, tags=None)`        | Sends a `/me` (`CTCP ACTION`) to `target`.  |
-| `msg(target, *msg, tags=None)`       | Sends a `PRIVMSG` to `target`.              |
-| `notice(target, *msg, tags=None)`    | Sends a `NOTICE` to `target`.               |
+| `msg(target, *msg, tags=None)`       | Sends a `PRIVMSG` to `target`. `target` should not contain spaces or start with a colon. |
+| `notice(target, *msg, tags=None)`    | Sends a `NOTICE` to `target`. `target` should not contain spaces or start with a colon. |
 | `quote(*msg, force=False, tags=None)` | Sends a raw message to IRC, use `force=True` to send while disconnected. Do not send multiple commands in one `irc.quote()`, as the newlines will be stripped and it will be sent as one command. The `tags` parameter optionally allows you to add a `dict` with IRCv3 client tags (all starting in `+`), and will not be sent to IRC servers that do not support client tags. |
 
 *Note that if `force=False` on `irc.quote` (or `irc.msg` etc is called) while
@@ -103,8 +103,8 @@ def handler(irc, hostmask, args):
 
  - If you don't need support for miniirc <1.4.0 and are parsing the last
     parameter, setting `colon` to `False` is strongly recommended. If the
-    `colon` parameter is omitted, it defaults to `True`, however this may change
-    if/when miniirc v2.0.0 is released.
+    `colon` parameter is omitted, it defaults to `True`, however this will
+    change when miniirc v2.0.0 is released.
  - Although `Handler` and `CmdHandler` currently accept any object that can be
     converted to a string, every event is converted to a string internally.
  - Not specifying the [`ircv3`](#ircv3-tags) parameter when it is not required
@@ -121,7 +121,7 @@ Hostmasks are tuples with the format `('user', 'ident', 'hostname')`. If `ident`
 and `hostname` aren't sent from the server, they will be filled in with the
 previous value. If a command is received without a hostmask, all the `hostmask`
 elements will be set to the name of the command. This is deprecated, however,
-and if/when miniirc v2.0.0 is released the `hostmask` elements will be set to
+and when miniirc v2.0.0 is released the `hostmask` elements will be set to
 empty strings.
 
 ### Making existing functions handlers
@@ -302,11 +302,14 @@ is still in beta and there will be breaking API changes in the future.
 
 ## Deprecations
 
-miniirc v2.0.0 may never be released, however if it is the following breaking
-changes will be made:
+When miniirc v2.0.0 is released, the following breaking changes will be made:
 
  - Internal-only attributes `irc.handlers`, `irc.sock`, and `irc.sendq`
     (please do not use these) will be renamed. Again, please do not use these.
+ - `irc.nick` will be the nickname used when connecting to IRC rather than the
+    current nickname, when miniirc v1.5.0 is released I recommend using
+    `irc.current_nick` instead. This will stop lots of underscores being
+    automatically appended to nicknames.
  - `irc.ns_identity` may be stored as a tuple instead of a string, for example
     `('username', 'password with spaces')` instead of
     `'username password with spaces'`. Both formats are currently accepted and
@@ -315,12 +318,12 @@ changes will be made:
     recommend updating to a more recent version of Python.
  - The `colon` keyword argument to `Handler` and `CmdHandler` will default to
     `False` instead of `True`.
- - Unspecified hostmasks will be an empty string instead of the command. Don't
-    rely on this "feature" if possible, simply ignore the hostmask if you do
-    not need it.
  - The `'surrogateescape'` encoding error handler may be used to avoid losing
     data on invalid UTF-8 messages. See
     [PEP 383](https://www.python.org/dev/peps/pep-0383/) for more information.
+  - Unspecified hostmasks will be an empty string instead of the command. Don't
+    rely on this "feature" if possible, simply ignore the hostmask if you do
+    not need it.
 
 ## Working examples/implementations
 

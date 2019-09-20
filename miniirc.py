@@ -164,13 +164,17 @@ class _Logfile:
 
 # Create the IRC class
 class IRC:
-    connected       = None
-    debug_file      = sys.stdout
-    sendq           = None
-    msglen          = 512
-    _main_lock      = None
-    _sasl           = False
+    connected  = None
+    debug_file = sys.stdout
+    sendq      = None
+    msglen     = 512
+    _main_lock = None
+    _sasl      = False
     _unhandled_caps = None
+
+    # This exists for forwards compatibility with miniirc v1.5.0, you should
+    # not use it until v1.5.0 is released.
+    current_nick = property(lambda self : self.nick)
 
     # Debug print()
     def debug(self, *args, **kwargs):
