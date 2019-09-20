@@ -85,6 +85,10 @@ class IRC:
     _sasl: bool = False
     _unhandled_caps: Optional[set] = None
 
+    @property
+    def current_nick(self) -> str:
+        ...
+
     ip: str
     port: int
     nick: str
