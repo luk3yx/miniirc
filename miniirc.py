@@ -170,13 +170,15 @@ def _prune_arg(arg):
 
 # Create the IRC class
 class IRC:
-    connected       = None
-    debug_file      = sys.stdout
-    sendq           = None
-    msglen          = 512
-    _main_lock      = None
-    _sasl           = False
+    connected  = None
+    debug_file = sys.stdout
+    sendq      = None
+    msglen     = 512
+    _main_lock = None
+    _sasl      = False
     _unhandled_caps = None
+
+    current_nick = property(lambda self : self.nick)
 
     # Debug print()
     def debug(self, *args, **kwargs):
@@ -282,7 +284,7 @@ class IRC:
         self._sasl = self._pinged = False
         self.main()
 
-    # An easier way to disconnect
+    # Disconnect from IRC.
     def disconnect(self, msg=None, *, auto_reconnect=False):
         self.persist   = auto_reconnect and self.persist
         self.connected = None

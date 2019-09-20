@@ -50,8 +50,8 @@ irc = miniirc.IRC(ip, port, nick, channels=None, *, ssl=None, ident=None, realna
 | `disconnect(msg=..., *, auto_reconnect=False)`| Disconnects from the IRC server. `auto_reconnect` will be overriden by `self.persist` if set to `True`. |
 | `Handler(...)` | An event handler, see [Handlers](#handlers) for more info.|
 | `me(target, *msg, tags=None)`        | Sends a `/me` (`CTCP ACTION`) to `target`.  |
-| `msg(target, *msg, tags=None)`       | Sends a `PRIVMSG` to `target`.              |
-| `notice(target, *msg, tags=None)`    | Sends a `NOTICE` to `target`.               |
+| `msg(target, *msg, tags=None)`       | Sends a `PRIVMSG` to `target`. `target` should not contain spaces or start with a colon. |
+| `notice(target, *msg, tags=None)`    | Sends a `NOTICE` to `target`. `target` should not contain spaces or start with a colon. |
 | `quote(*msg, force=False, tags=None)` | Sends a raw message to IRC, use `force=True` to send while disconnected. Do not send multiple commands in one `irc.quote()`, as the newlines will be stripped and it will be sent as one command. The `tags` parameter optionally allows you to add a `dict` with IRCv3 client tags (all starting in `+`), and will not be sent to IRC servers that do not support client tags. |
 | `send(*msg, force=False, tags=None)` | Similar to `irc.quote()`, however every positional argument is treated as a parameter, spaces are removed from every parameter except the last one, and a colon is automatically prepended to the last parameter. |
 
@@ -59,6 +59,31 @@ irc = miniirc.IRC(ip, port, nick, channels=None, *, ssl=None, ident=None, realna
 miniirc is not connected, messages will be temporarily stored and then sent
 once miniirc is connected. Setting `force=True` will throw errors if miniirc is
 completely disconnected (`irc.connected` is `None`).*
+
+### irc.quote and irc.send
+
+The two functions `irc.quote` and `irc.send` may sound similar, however are
+fundamentally different: `irc.quote()` joins all provided arguments with spaces
+and sends them as a raw message to IRC, while `irc.send()` treats each argument
+as a parameter. If arguments passed to `irc.send()` contain spaces, they are
+replaced with U+00A0 (a non-breaking space, visually similar to a regular
+space however not interpreted as one).
+
+#### Examples
+
+ - `irc.quote('PRIVMSG', '#channel :Hello,', 'world!')` sends "Hello, world!"
+    to #channel.
+ - `irc.quote('PRIVMSG', 'channel', 'Hello, world!')` is invalid ("Hello," and
+    "world!" are sent as separate parameters).
+ - `irc.send('PRIVMSG', '#channel', 'Hello, world!')` will send "Hello, world!"
+    to "#channel".
+ - `irc.send('PRIVMSG', '#channel with spaces', 'Hello, world!')` will send
+    "Hello, world!" to `#channel\xa0with\xa0spaces`, where `\xa0` is a
+    non-breaking space.
+
+*If you are unsure and do not need compatibility with miniirc <1.5.0, use
+`irc.send()`. `PRIVMSG` is just used as an example, if you need to send
+`PRIVMSG`s use `irc.msg()` instead.*
 
 ## Variables
 
@@ -68,9 +93,10 @@ completely disconnected (`irc.connected` is `None`).*
 | ------------- | --------------------------------------------------------  |
 | `active_caps` | A `set` of IRCv3 capabilities that have been successfully negotiated with the IRC server. This is empty while disconnected. |
 | `connected`   | A boolean (or `None`), `True` when miniirc is connected, `False` when miniirc is connecting, and `None` when miniirc is not connected. |
+| `current_nick`| The bot/client's current nickname. Do not modify this, and use this instead of `irc.nick` when getting the bot's current nickname for compatibility with miniirc v2.0.0. |
 | `isupport`    | *New in 1.1.0.* A `dict` with values (not necessarily strings) from `ISUPPORT` messages sent to the client. |
 | `msglen`      | *New in 1.1.0.* The maximum length (in bytes) of messages (including `\r\n`). This is automatically changed if the server supports the `oragono.io/maxline-2` capability. |
-| `nick`        | The current nickname.                                     |
+| `nick`        | The nickname to use when connecting to IRC. Until miniirc v2.0.0, you should only modify this while disconnected, as it is also updated with nickname changes. |
 
 The following arguments passed to `miniirc.IRC` are also available: `ip`,
 `port`, `channels`, `ssl`, `ident`, `realname`, `persist`, `connect_modes`,
@@ -105,7 +131,7 @@ def handler(irc, hostmask, args):
  - If you don't need support for miniirc <1.4.0 and are parsing the last
     parameter, setting `colon` to `False` is strongly recommended. If the
     `colon` parameter is omitted, it defaults to `True`, however this will
-    change if/when miniirc v2.0.0 is released.
+    change when miniirc v2.0.0 is released.
  - Although `Handler` and `CmdHandler` currently accept any object that can be
     converted to a string, every event is converted to a string internally.
  - Not specifying the [`ircv3`](#ircv3-tags) parameter when it is not required
@@ -122,7 +148,7 @@ Hostmasks are tuples with the format `('user', 'ident', 'hostname')`. If `ident`
 and `hostname` aren't sent from the server, they will be filled in with the
 previous value. If a command is received without a hostmask, all the `hostmask`
 elements will be set to the name of the command. This is deprecated, however,
-and if/when miniirc v2.0.0 is released the `hostmask` elements will be set to
+and when miniirc v2.0.0 is released the `hostmask` elements will be set to
 empty strings.
 
 ### Making existing functions handlers
@@ -303,11 +329,14 @@ is still in beta and there will be breaking API changes in the future.
 
 ## Deprecations
 
-miniirc v2.0.0 may never be released, however if it is the following breaking
-changes will be made:
+When miniirc v2.0.0 is released, the following breaking changes will be made:
 
  - Internal-only attributes `irc.handlers`, `irc.sock`, and `irc.sendq`
     (please do not use these) will be renamed. Again, please do not use these.
+ - `irc.nick` will be the nickname used when connecting to IRC rather than the
+    current nickname, use `irc.current_nick` for the current nickname (since
+    v1.5.0). This will stop lots of underscores being automatically appended to
+    nicknames.
  - `irc.ns_identity` may be stored as a tuple instead of a string, for example
     `('username', 'password with spaces')` instead of
     `'username password with spaces'`. Both formats are currently accepted and
@@ -316,12 +345,12 @@ changes will be made:
     recommend updating to a more recent version of Python.
  - The `colon` keyword argument to `Handler` and `CmdHandler` will default to
     `False` instead of `True`.
- - Unspecified hostmasks will be an empty string instead of the command. Don't
-    rely on this "feature" if possible, simply ignore the hostmask if you do
-    not need it.
  - The `'surrogateescape'` encoding error handler may be used to avoid losing
     data on invalid UTF-8 messages. See
     [PEP 383](https://www.python.org/dev/peps/pep-0383/) for more information.
+ - Unspecified hostmasks will be an empty string instead of the command. Don't
+    rely on this "feature" if possible, simply ignore the hostmask if you do
+    not need it.
 
 ## Working examples/implementations
 
