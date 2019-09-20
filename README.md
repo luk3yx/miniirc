@@ -104,8 +104,8 @@ def handler(irc, hostmask, args):
 
  - If you don't need support for miniirc <1.4.0 and are parsing the last
     parameter, setting `colon` to `False` is strongly recommended. If the
-    `colon` parameter is omitted, it defaults to `True`, however this may change
-    if/when miniirc v2.0.0 is released.
+    `colon` parameter is omitted, it defaults to `True`, however this will
+    change if/when miniirc v2.0.0 is released.
  - Although `Handler` and `CmdHandler` currently accept any object that can be
     converted to a string, every event is converted to a string internally.
  - Not specifying the [`ircv3`](#ircv3-tags) parameter when it is not required
