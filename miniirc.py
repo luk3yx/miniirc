@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 #
-# miniirc - A small-ish backwards-compatible IRC framework.
+# miniirc - A small-ish IRC framework.
 #
 # © 2019 by luk3yx and other developers of miniirc.
 #
@@ -8,9 +8,9 @@
 import atexit, errno, threading, time, socket, ssl, sys
 
 # The version string and tuple
-ver = __version_info__ = (1,4,3, 'alpha', 0)
-version = 'miniirc IRC framework v1.4.3a0'
-__version__ = '1.4.3a0'
+ver = __version_info__ = (1,4,3)
+version = 'miniirc IRC framework v1.4.3'
+__version__ = '1.4.3'
 
 # __all__ and _default_caps
 __all__ = ['CmdHandler', 'Handler', 'IRC']
@@ -172,8 +172,7 @@ class IRC:
     _sasl      = False
     _unhandled_caps = None
 
-    # This exists for forwards compatibility with miniirc v1.5.0, you should
-    # not use it until v1.5.0 is released.
+    # This will no longer be an alias in miniirc v2.0.0.
     current_nick = property(lambda self : self.nick)
 
     # Debug print()

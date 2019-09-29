@@ -8,6 +8,21 @@ Notes:
  - This changelog may contain typographical errors, it is still a
     work-in-progress.
 
+## 1.4.3 - 2019-09-29
+
+### Added
+
+- `irc.current_nick` to be used instead of `irc.nick` when wanting the current
+    nickname instead of the one used to connect. Note that this is currently an
+    alias for `irc.nick`.
+
+### Changed
+
+ - Prevent `irc.quote()` from throwing errors if the socket somehow breaks. (I
+    will probably rewrite `irc.quote`'s internals in miniirc v2.0.0).
+ - Request the `away-notify` IRCv3 capability by default.
+ - Use `threading.Lock`s inside `connect()`.
+
 ## 1.4.2 - 2019-08-16
 
 ### Changed
