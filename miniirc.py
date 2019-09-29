@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 #
-# miniirc - A small-ish backwards-compatible IRC framework.
+# miniirc - A small-ish IRC framework.
 #
 # © 2019 by luk3yx and other developers of miniirc.
 #
@@ -178,6 +178,7 @@ class IRC:
     _sasl      = False
     _unhandled_caps = None
 
+    # This will no longer be an alias in miniirc v2.0.0.
     current_nick = property(lambda self : self.nick)
 
     # Debug print()

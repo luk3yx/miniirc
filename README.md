@@ -93,7 +93,7 @@ space however not interpreted as one).
 | ------------- | --------------------------------------------------------  |
 | `active_caps` | A `set` of IRCv3 capabilities that have been successfully negotiated with the IRC server. This is empty while disconnected. |
 | `connected`   | A boolean (or `None`), `True` when miniirc is connected, `False` when miniirc is connecting, and `None` when miniirc is not connected. |
-| `current_nick`| *New in v1.5.0.* The bot/client's current nickname, currently an alias for `irc.nick`. Do not modify this, and use this instead of `irc.nick` when getting the bot's current nickname for compatibility with miniirc v2.0.0. |
+| `current_nick` | *New in v1.4.3.* The bot/client's current nickname, currently an alias for `irc.nick`. Do not modify this, and use this instead of `irc.nick` when getting the bot's current nickname for compatibility with miniirc v2.0.0. |
 | `isupport`    | *New in v1.1.0.* A `dict` with values (not necessarily strings) from `ISUPPORT` messages sent to the client. |
 | `msglen`      | *New in v1.1.0.* The maximum length (in bytes) of messages (including `\r\n`). This is automatically changed if the server supports the `oragono.io/maxline-2` capability. |
 | `nick`        | The nickname to use when connecting to IRC. Until miniirc v2.0.0, you should only modify this while disconnected, as it is currently automatically updated with nickname changes. |
@@ -329,15 +329,16 @@ is still in beta and there will be breaking API changes in the future.
 
 ## Deprecations
 
-When miniirc v2.0.0 is released, the following breaking changes will be made:
+When miniirc v2.0.0 is released, the following breaking changes will (probably)
+be made:
 
  - Internal-only attributes `irc.handlers`, `irc.sock`, and `irc.sendq`
     (please do not use these) will be renamed. Again, please do not use these.
  - `irc.nick` will be the nickname used when connecting to IRC rather than the
     current nickname, use `irc.current_nick` for the current nickname (since
-    v1.5.0). This will stop lots of underscores being automatically appended to
+    v1.4.3). This will stop lots of underscores being automatically appended to
     nicknames.
- - `irc.ns_identity` may be stored as a tuple instead of a string, for example
+ - `irc.ns_identity` will be stored as a tuple instead of a string, for example
     `('username', 'password with spaces')` instead of
     `'username password with spaces'`. Both formats are currently accepted and
     will be accepted in the `ns_identity` keyword argument.
@@ -345,9 +346,6 @@ When miniirc v2.0.0 is released, the following breaking changes will be made:
     recommend updating to a more recent version of Python.
  - The `colon` keyword argument to `Handler` and `CmdHandler` will default to
     `False` instead of `True`.
- - The `'surrogateescape'` encoding error handler may be used to avoid losing
-    data on invalid UTF-8 messages. See
-    [PEP 383](https://www.python.org/dev/peps/pep-0383/) for more information.
  - Unspecified hostmasks will be an empty string instead of the command. Don't
     rely on this "feature" if possible, simply ignore the hostmask if you do
     not need it.
