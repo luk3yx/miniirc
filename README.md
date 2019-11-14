@@ -308,16 +308,17 @@ the time of writing this) under active development.
     MUST use Python 2, you could try manually porting miniirc.
  - Python 3.3 and below probably won't work, and fixes will not be added unless
     they are very trivial.
- - Python 3.4, although not recommended, should work, however it is not tested
-    as thoroughly.
- - Python 3.5 and above should work with the latest stable version of miniirc.
+ - Python 3.4 to 3.5, although not recommended, should work, however they are
+    not tested as thoroughly as more recent versions.
+ - Python 3.6 and above should work with the latest stable version of miniirc.
 
 If there is a bug/error in Python 3.4 or newer, please open an issue or pull
 request on [GitHub](https://github.com/luk3yx/miniirc/issues) or
 [GitLab](https://gitlab.com/luk3yx/miniirc/issues).
 
-*If you are using Python 3.4 or an older version of Python, I strongly
-recommend updating.*
+*If you are using Python 3.5 or an older version of Python, I strongly
+recommend updating. Later versions of Python include features such as f-strings
+that make software development easier.*
 
 ## miniirc_extras
 
