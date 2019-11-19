@@ -23,7 +23,7 @@ irc = miniirc.IRC(ip, port, nick, channels=None, *, ssl=None, ident=None, realna
 | `ip`          | The IP/hostname of the IRC server to connect to.          |
 | `port`        | The port to connect to.                                   |
 | `nick`        | The nickname of the bot.                                  |
-| `channels`    | The channels to join on connect. This can be an iterable containing strings (list, set, etc), or (since v1.4.0) a string. Attempting to join multiple channels with a string will create unintended side-effects, and should be avoided until miniirc v1.5.0. |
+| `channels`    | The channels to join on connect. This can be an iterable containing strings (list, set, etc), or (since v1.5.0) a comma-delimited string. |
 | `ssl`         | Enable TLS/SSL. If `None`, TLS/SSL is disabled unless the port is `6697`. |
 | `ident`       | The ident to use, defaults to `nick`.                     |
 | `realname`    | The realname to use, defaults to `nick` as well.          |
@@ -53,11 +53,37 @@ irc = miniirc.IRC(ip, port, nick, channels=None, *, ssl=None, ident=None, realna
 | `msg(target, *msg, tags=None)`       | Sends a `PRIVMSG` to `target`. `target` should not contain spaces or start with a colon. |
 | `notice(target, *msg, tags=None)`    | Sends a `NOTICE` to `target`. `target` should not contain spaces or start with a colon. |
 | `quote(*msg, force=False, tags=None)` | Sends a raw message to IRC, use `force=True` to send while disconnected. Do not send multiple commands in one `irc.quote()`, as the newlines will be stripped and it will be sent as one command. The `tags` parameter optionally allows you to add a `dict` with IRCv3 client tags (all starting in `+`), and will not be sent to IRC servers that do not support client tags. |
+| `send(*msg, force=False, tags=None)` | Similar to `irc.quote()`, however every positional argument is treated as a parameter, spaces are removed from every parameter except the last one, and a colon is automatically prepended to the last parameter. |
 
 *Note that if `force=False` on `irc.quote` (or `irc.msg` etc is called) while
 miniirc is not connected, messages will be temporarily stored and then sent
 once miniirc is connected. Setting `force=True` will throw errors if miniirc is
 completely disconnected (`irc.connected` is `None`).*
+
+### irc.quote and irc.send
+
+The two functions `irc.quote` and `irc.send` may sound similar, however are
+fundamentally different: `irc.quote()` joins all provided arguments with spaces
+and sends them as a raw message to IRC, while `irc.send()` treats each argument
+as a parameter. If arguments passed to `irc.send()` contain spaces, they are
+replaced with U+00A0 (a non-breaking space, visually similar to a regular
+space however not interpreted as one).
+
+#### Examples
+
+ - `irc.quote('PRIVMSG', '#channel :Hello,', 'world!')` sends "Hello, world!"
+    to #channel.
+ - `irc.quote('PRIVMSG', 'channel', 'Hello, world!')` is invalid ("Hello," and
+    "world!" are sent as separate parameters).
+ - `irc.send('PRIVMSG', '#channel', 'Hello, world!')` will send "Hello, world!"
+    to "#channel".
+ - `irc.send('PRIVMSG', '#channel with spaces', 'Hello, world!')` will send
+    "Hello, world!" to `#channel\xa0with\xa0spaces`, where `\xa0` is a
+    non-breaking space.
+
+*If you are unsure and do not need compatibility with miniirc <1.5.0, use
+`irc.send()`. `PRIVMSG` is just used as an example, if you need to send
+`PRIVMSG`s use `irc.msg()` instead.*
 
 ## Variables
 
@@ -67,10 +93,10 @@ completely disconnected (`irc.connected` is `None`).*
 | ------------- | --------------------------------------------------------  |
 | `active_caps` | A `set` of IRCv3 capabilities that have been successfully negotiated with the IRC server. This is empty while disconnected. |
 | `connected`   | A boolean (or `None`), `True` when miniirc is connected, `False` when miniirc is connecting, and `None` when miniirc is not connected. |
-| `current_nick` | *New in v1.4.3.* The bot/client's current nickname. Do not modify this, and use this instead of `irc.nick` when getting the bot's current nickname for compatibility with miniirc v2.0.0. |
+| `current_nick` | *New in v1.4.3.* The bot/client's current nickname, currently an alias for `irc.nick`. Do not modify this, and use this instead of `irc.nick` when getting the bot's current nickname for compatibility with miniirc v2.0.0. |
 | `isupport`    | *New in v1.1.0.* A `dict` with values (not necessarily strings) from `ISUPPORT` messages sent to the client. |
 | `msglen`      | *New in v1.1.0.* The maximum length (in bytes) of messages (including `\r\n`). This is automatically changed if the server supports the `oragono.io/maxline-2` capability. |
-| `nick`        | The nickname to use when connecting to IRC. Until miniirc v2.0.0, you should only modify this while disconnected, as it is also updated with nickname changes. |
+| `nick`        | The nickname to use when connecting to IRC. Until miniirc v2.0.0, you should only modify this while disconnected, as it is currently automatically updated with nickname changes. |
 
 The following arguments passed to `miniirc.IRC` are also available: `ip`,
 `port`, `channels`, `ssl`, `ident`, `realname`, `persist`, `connect_modes`,
@@ -282,16 +308,17 @@ the time of writing this) under active development.
     MUST use Python 2, you could try manually porting miniirc.
  - Python 3.3 and below probably won't work, and fixes will not be added unless
     they are very trivial.
- - Python 3.4, although not recommended, should work, however it is not tested
-    as thoroughly.
- - Python 3.5 and above should work with the latest stable version of miniirc.
+ - Python 3.4 to 3.5, although not recommended, should work, however they are
+    not tested as thoroughly as more recent versions.
+ - Python 3.6 and above should work with the latest stable version of miniirc.
 
 If there is a bug/error in Python 3.4 or newer, please open an issue or pull
 request on [GitHub](https://github.com/luk3yx/miniirc/issues) or
 [GitLab](https://gitlab.com/luk3yx/miniirc/issues).
 
-*If you are using Python 3.4 or an older version of Python, I strongly
-recommend updating.*
+*If you are using Python 3.5 or an older version of Python, I strongly
+recommend updating. Later versions of Python include features such as f-strings
+that make software development easier.*
 
 ## miniirc_extras
 

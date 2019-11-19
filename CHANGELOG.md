@@ -8,6 +8,14 @@ Notes:
  - This changelog may contain typographical errors, it is still a
     work-in-progress.
 
+## 1.5.0 - 2019-11-19
+
+### Added
+
+ - Allow a comma-delimited string in the `channels` argument.
+ - `irc.send()`: `irc.send('PRIVMSG', '#channel with spaces', 'Test message')`
+    → `irc.quote('PRIVMSG', '#channel\xa0with\xa0spaces', ':Test message')`
+
 ## 1.4.3 - 2019-09-29
 
 ### Added

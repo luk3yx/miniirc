@@ -8,9 +8,9 @@
 import atexit, errno, threading, time, socket, ssl, sys
 
 # The version string and tuple
-ver = __version_info__ = (1,4,3)
-version = 'miniirc IRC framework v1.4.3'
-__version__ = '1.4.3'
+ver = __version_info__ = (1,5,0)
+version = 'miniirc IRC framework v1.5.0'
+__version__ = '1.5.0'
 
 # __all__ and _default_caps
 __all__ = ['CmdHandler', 'Handler', 'IRC']
@@ -162,6 +162,12 @@ class _Logfile:
         self._buffer = ''
         self._func = func
 
+# Replace invalid RFC1459 characters with Unicode lookalikes
+def _prune_arg(arg):
+    if arg.startswith(':'):
+        arg = '\u0703' + arg[1:]
+    return arg.replace(' ', '\xa0').replace('\r', '\xa0').replace('\n', '\xa0')
+
 # Create the IRC class
 class IRC:
     connected  = None
@@ -213,7 +219,14 @@ class IRC:
                 msg = (tags,) + msg
             self.sendq.append(msg)
 
-    # User-friendly msg, notice, and ctcp functions.
+    def send(self, *msg, force=None, tags=None):
+        if len(msg) > 1:
+            self.quote(*map(_prune_arg, msg[:-1]), ':' + msg[-1], force=force,
+                tags=tags)
+        else:
+            self.quote(*map(_prune_arg, msg), force=force, tags=tags)
+
+    # User-friendly msg, notice, and CTCP functions.
     def msg(self, target, *msg, tags=None):
         self.quote('PRIVMSG', str(target), ':' + ' '.join(msg), tags=tags)
 
@@ -272,7 +285,7 @@ class IRC:
         self._sasl = self._pinged = False
         self.main()
 
-    # An easier way to disconnect
+    # Disconnect from IRC.
     def disconnect(self, msg=None, *, auto_reconnect=False):
         self.persist   = auto_reconnect and self.persist
         self.connected = None
@@ -463,7 +476,7 @@ class IRC:
         if auto_connect:
             self.connect()
 
-# Create basic handlers, so the bot will work.
+# Handle some IRC messages by default.
 @Handler('001')
 def _handler(irc, hostmask, args):
     irc.connected = True
