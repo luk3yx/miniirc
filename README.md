@@ -73,7 +73,7 @@ space however not interpreted as one).
 
  - `irc.quote('PRIVMSG', '#channel :Hello,', 'world!')` sends "Hello, world!"
     to #channel.
- - `irc.quote('PRIVMSG', 'channel', 'Hello, world!')` is invalid ("Hello," and
+ - `irc.quote('PRIVMSG', '#channel', 'Hello, world!')` is invalid ("Hello," and
     "world!" are sent as separate parameters).
  - `irc.send('PRIVMSG', '#channel', 'Hello, world!')` will send "Hello, world!"
     to "#channel".
