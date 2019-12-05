@@ -16,7 +16,7 @@ setup(
 
     long_description              = desc,
     long_description_content_type = 'text/markdown',
-    install_requires              = ['certifi'],
+    install_requires              = ['certifi>=2019.11.28'],
     python_requires               = '>=3.0',
 
     classifiers = [

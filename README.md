@@ -356,9 +356,9 @@ be made:
 Here is a list of some (open-source) bots using miniirc, in alphabetical order:
 
  - [irc-rss-feed-bot] - Posts RSS entry titles and shortened URLs to IRC
-    channels. *Python 3.7+*
+    channels. *Python 3.8+*
  - [irc-url-title-bot] - Gets webpage titles from URLs posted in IRC channels.
-    *Python 3.7+*
+    *Python 3.8+*
  - [lurklite] - A generic configurable IRC bot.
     *[GitHub](https://github.com/luk3yx/lurklite) link.*
  - [stdinbot] - A very simple bot that dumps stdin to an IRC channel.
