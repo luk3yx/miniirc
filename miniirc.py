@@ -8,9 +8,9 @@
 import atexit, errno, threading, time, socket, ssl, sys
 
 # The version string and tuple
-ver = __version_info__ = (1,5,0)
-version = 'miniirc IRC framework v1.5.0'
-__version__ = '1.5.0'
+ver = __version_info__ = (1,5,1, 'a0')
+version = 'miniirc IRC framework v1.5.1a0'
+__version__ = '1.5.1a0'
 
 # __all__ and _default_caps
 __all__ = ['CmdHandler', 'Handler', 'IRC']
@@ -555,7 +555,9 @@ def _handler(irc, hostmask, args):
                     irc._handle_cap(cap)
                 else:
                     req.add(cap)
-        if req:
+        if irc.connected is None:
+            return
+        elif req:
             irc.quote('CAP REQ', ':' + ' '.join(req), force=True)
         elif cmd == 'LS' and not irc._unhandled_caps and args[2] != '*':
             irc._unhandled_caps = None

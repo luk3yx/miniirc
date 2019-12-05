@@ -38,20 +38,20 @@ _handler_func_1 = Callable[['IRC', Tuple[str, str, str], List[str]], Any]
 _handler_func_2 = Callable[['IRC', Tuple[str, str, str],
                             Dict[str, Union[str, bool]], List[str]], Any]
 @overload
-def Handler(*events: str, colon: bool = True, ircv3: Literal[False] = False) \
+def Handler(*events: str, colon: bool, ircv3: Literal[False] = False) \
     -> Callable[[_handler_func_1], _handler_func_1]: ...
 @overload
-def Handler(*events: str, colon: bool = True, ircv3: Literal[True]) \
+def Handler(*events: str, colon: bool, ircv3: Literal[True]) \
     -> Callable[[_handler_func_2], _handler_func_2]: ...
 
 _handler_func_3 = Callable[['IRC', str, Tuple[str, str, str], List[str]], Any]
 _handler_func_4 = Callable[['IRC', str, Tuple[str, str, str],
                             Dict[str, Union[str, bool]], List[str]], Any]
 @overload
-def CmdHandler(*events: str, colon: bool = True, ircv3: Literal[False] = False) \
+def CmdHandler(*events: str, colon: bool, ircv3: Literal[False] = False) \
     -> Callable[[_handler_func_3], _handler_func_3]: ...
 @overload
-def CmdHandler(*events: str, colon: bool = True, ircv3: Literal[True]) \
+def CmdHandler(*events: str, colon: bool, ircv3: Literal[True]) \
     -> Callable[[_handler_func_4], _handler_func_4]: ...
 
 # Parse IRCv3 tags
@@ -132,17 +132,17 @@ class IRC:
 
     # Allow per-connection handlers
     @overload
-    def Handler(*events: str, colon: bool = True, ircv3: Literal[False] = False) \
+    def Handler(*events: str, colon: bool, ircv3: Literal[False] = False) \
         -> Callable[[_handler_func_1], _handler_func_1]: ...
     @overload
-    def Handler(*events: str, colon: bool = True, ircv3: Literal[True]) \
+    def Handler(*events: str, colon: bool, ircv3: Literal[True]) \
         -> Callable[[_handler_func_2], _handler_func_2]: ...
 
     @overload
-    def CmdHandler(*events: str, colon: bool = True, ircv3: Literal[False] = False) \
+    def CmdHandler(*events: str, colon: bool, ircv3: Literal[False] = False) \
         -> Callable[[_handler_func_3], _handler_func_3]: ...
     @overload
-    def CmdHandler(*events: str, colon: bool = True, ircv3: Literal[True]) \
+    def CmdHandler(*events: str, colon: bool, ircv3: Literal[True]) \
         -> Callable[[_handler_func_4], _handler_func_4]: ...
 
     # The connect function

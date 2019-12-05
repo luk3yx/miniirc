@@ -2,7 +2,7 @@
 
 [![Python 3.4+]](#python-version-support) [![Available on PyPI.]](https://pypi.org/project/miniirc/) [![License: MIT]](https://github.com/luk3yx/miniirc/blob/master/LICENSE.md)
 
-A simple IRC client framework.
+A relatively simple thread-safe(-ish) IRC client framework.
 
 To install miniirc, simply run `pip3 install miniirc` as root.
 
@@ -29,7 +29,7 @@ irc = miniirc.IRC(ip, port, nick, channels=None, *, ssl=None, ident=None, realna
 | `realname`    | The realname to use, defaults to `nick` as well.          |
 | `persist`     | Whether to automatically reconnect.                       |
 | `debug`       | Enables debug mode, prints all IRC messages. This can also be a file-like object (with write mode enabled) if you want debug messages to be written into a file instead of being printed to stdout, or a function (for example `logging.debug`). |
-| `ns_identity` | The NickServ account to use (`<user> <password>`). This can be a tuple or list since miniirc v1.2.0. |
+| `ns_identity` | The NickServ account to use as a tuple/list of length 2 (`('<user>', '<password>')`). For compatibility, this can be a string (`'<user> <password>'`). |
 | `auto_connect`| Runs `.connect()` straight away.                          |
 | `ircv3_caps`  | A set() of additional IRCv3 capabilities to request. SASL is auto-added if `ns_identity` is specified. |
 | `connect_modes` | A mode string (for example `'+B'`) of UMODEs to set when connected. |
@@ -77,9 +77,8 @@ space however not interpreted as one).
     "world!" are sent as separate parameters).
  - `irc.send('PRIVMSG', '#channel', 'Hello, world!')` will send "Hello, world!"
     to "#channel".
- - `irc.send('PRIVMSG', '#channel with spaces', 'Hello, world!')` will send
-    "Hello, world!" to `#channel\xa0with\xa0spaces`, where `\xa0` is a
-    non-breaking space.
+ - `irc.send('PRIVMSG', '#channel :Hello,', 'world!')` will send "world!" to
+    `#channel\xa0:Hello,`, where `\xa0` is a non-breaking space.
 
 *If you are unsure and do not need compatibility with miniirc <1.5.0, use
 `irc.send()`. `PRIVMSG` is just used as an example, if you need to send
@@ -94,8 +93,8 @@ space however not interpreted as one).
 | `active_caps` | A `set` of IRCv3 capabilities that have been successfully negotiated with the IRC server. This is empty while disconnected. |
 | `connected`   | A boolean (or `None`), `True` when miniirc is connected, `False` when miniirc is connecting, and `None` when miniirc is not connected. |
 | `current_nick` | *New in v1.4.3.* The bot/client's current nickname, currently an alias for `irc.nick`. Do not modify this, and use this instead of `irc.nick` when getting the bot's current nickname for compatibility with miniirc v2.0.0. |
-| `isupport`    | *New in v1.1.0.* A `dict` with values (not necessarily strings) from `ISUPPORT` messages sent to the client. |
-| `msglen`      | *New in v1.1.0.* The maximum length (in bytes) of messages (including `\r\n`). This is automatically changed if the server supports the `oragono.io/maxline-2` capability. |
+| `isupport`    | A `dict` with values (not necessarily strings) from `ISUPPORT` messages sent to the client. |
+| `msglen`      | The maximum length (in bytes) of messages (including `\r\n`). This is automatically changed if the server supports the `oragono.io/maxline-2` capability. |
 | `nick`        | The nickname to use when connecting to IRC. Until miniirc v2.0.0, you should only modify this while disconnected, as it is currently automatically updated with nickname changes. |
 
 The following arguments passed to `miniirc.IRC` are also available: `ip`,
@@ -247,8 +246,6 @@ irc.connect()
 
 ### Handling multiple events
 
-*New in version 1.3.0.*
-
 If you want to handle multiple events and/or be able to get the name of the
 event being triggered, you can use `irc.CmdHandler`. This will pass an extra
 `command` argument to the handler function (between `irc` and `hostmask`),
@@ -270,7 +267,7 @@ handler will be called many times while connecting (and once connected).
 import miniirc
 
 # Not required, however this makes sure miniirc isn't insanely outdated.
-assert miniirc.ver >= (1,4,1)
+assert miniirc.ver >= (1,4,3)
 
 @miniirc.Handler('PRIVMSG', 'NOTICE', colon=True)
 def handler(irc, hostmask, args):
@@ -343,7 +340,10 @@ be made:
     `('username', 'password with spaces')` instead of
     `'username password with spaces'`. Both formats are currently accepted and
     will be accepted in the `ns_identity` keyword argument.
- - Python 3.4 support *may* be dropped. If you are using Python 3.4, I
+ - No exceptions will be raised in `irc.quote`/`irc.send` with `force=True`
+    when the socket is closed. Instead of relying on these exceptions, use
+    `irc.connected` which is set to `None` when completely disconnected.
+ - Python 3.4 support will probably be dropped. If you are using Python 3.4, I
     recommend updating to a more recent version of Python.
  - The `colon` keyword argument to `Handler` and `CmdHandler` will default to
     `False` instead of `True`.

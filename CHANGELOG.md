@@ -8,6 +8,21 @@ Notes:
  - This changelog may contain typographical errors, it is still a
     work-in-progress.
 
+## 1.5.1 - Unreleased
+
+### Changed
+
+ - `miniirc.pyi` now treats `colon` as a required parameter to `Handler`
+    and `CmdHandler`, type checkers should throw an error if this parameter
+    is unspecified.
+ - No longer throws an error caused by a race condition with the `sts`
+    capability.
+
+### Deprecated
+
+ - Relying on `irc.quote` or `irc.send` throwing errors when the `force`
+    keyword argument is used.
+
 ## 1.5.0 - 2019-11-19
 
 ### Added
