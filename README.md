@@ -48,7 +48,7 @@ irc = miniirc.IRC(ip, port, nick, channels=None, *, ssl=None, ident=None, realna
 | `ctcp(target, *msg, reply=False, tags=None)` | Sends a `CTCP` request or reply to `target`. |
 | `debug(...)`  | Debug, calls `print(...)` if debug mode is on.            |
 | `disconnect(msg=..., *, auto_reconnect=False)`| Disconnects from the IRC server. `auto_reconnect` will be overriden by `self.persist` if set to `True`. |
-| `Handler(...)` | An event handler, see [Handlers](#handlers) for more info.|
+| `Handler(...)` | An event handler, see [Handlers](#handlers) for more info. |
 | `me(target, *msg, tags=None)`        | Sends a `/me` (`CTCP ACTION`) to `target`.  |
 | `msg(target, *msg, tags=None)`       | Sends a `PRIVMSG` to `target`. `target` should not contain spaces or start with a colon. |
 | `notice(target, *msg, tags=None)`    | Sends a `NOTICE` to `target`. `target` should not contain spaces or start with a colon. |
@@ -160,7 +160,7 @@ that gets triggered for every `IRC` object.
 You can also add multiple handlers of the same type easily:
 
 ```py
-add_handler = irc.Handler('PRIVMSG')
+add_handler = irc.Handler('PRIVMSG', colon=False)
 add_handler(handler_1)
 add_handler(self.instance_handler)
 ```
