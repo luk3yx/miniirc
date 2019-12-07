@@ -231,7 +231,7 @@ class IRC:
         self.quote('PRIVMSG', str(target), ':' + ' '.join(msg), tags=tags)
 
     def notice(self, target, *msg, tags=None):
-        self.quote('NOTICE',  str(target), ':' + ' '.join(msg), tags=tags)
+        self.quote('NOTICE', str(target), ':' + ' '.join(msg), tags=tags)
 
     def ctcp(self, target, *msg, reply=False, tags=None):
         m = (self.notice if reply else self.msg)
