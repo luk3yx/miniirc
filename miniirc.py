@@ -79,7 +79,7 @@ def _tags_to_dict(tag_list, separator=';'):
                     else:
                         value += char
             else:
-                value = tag[1]
+                value = tag[1] or True
             tags[tag[0]] = value
 
     return tags

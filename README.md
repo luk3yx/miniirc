@@ -6,9 +6,12 @@ A relatively simple thread-safe(-ish) IRC client framework.
 
 To install miniirc, simply run `pip3 install miniirc` as root.
 
+*If you have previously used miniirc, you may want to read the [deprecations list].*
+
 [Python 3.4+]: https://img.shields.io/badge/python-3.4/3.5+-blue.svg
 [Available on PyPI.]: https://img.shields.io/pypi/v/miniirc.svg
 [License: MIT]: https://img.shields.io/pypi/l/miniirc.svg
+[deprecations list]: #Deprecations
 
 ## Parameters
 
@@ -35,7 +38,7 @@ irc = miniirc.IRC(ip, port, nick, channels=None, *, ssl=None, ident=None, realna
 | `connect_modes` | A mode string (for example `'+B'`) of UMODEs to set when connected. |
 | `quit_message`| Sets the default quit message. This can be modified per-quit with `irc.disconnect()`. |
 | `ping_interval` | If no packets are sent or received for this amount of seconds, miniirc will send a `PING`, and if no reply is sent, after the same timeout, miniirc will attempt to reconnect. Set to `None` to disable. |
-| `verify_ssl`  | Verifies TLS/SSL certificates. Disabling this is not recommended. If you have trouble with certificate verification, try running `pip3 install certifi` first. |
+| `verify_ssl`  | Verifies TLS/SSL certificates. Disabling this is not recommended as it opens the IRC connection up to MiTM attacks. If you have trouble with certificate verification, try running `pip3 install certifi` first. |
 
 *The only mandatory parameters are `ip`, `port`, and `nick`.*
 
@@ -113,15 +116,16 @@ The basic syntax for a handler is as followed, where `*events` is a list of even
 
 ~~~py
 import miniirc
-@miniirc.Handler(*events, colon=True)
+@miniirc.Handler(*events, colon=False)
 def handler(irc, hostmask, args):
     # irc:      An 'IRC' object.
     # hostmask: A 'hostmask' object.
     # args:     A list containing the arguments sent to the command. Everything
     #             following the first `:` in the command is put into one item
     #             (args[-1]). If "colon" is "False", the leading ":" (if any)
-    #             is automatically removed. Setting this to False is probably
-    #             a good idea to prevent unexpected side effects.
+    #             is automatically removed. To prevent your code from horribly
+    #             breaking, always set it to False unless you know what you are
+    #             doing.
     pass
 ~~~
 

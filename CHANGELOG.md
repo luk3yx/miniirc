@@ -17,6 +17,8 @@ Notes:
     is unspecified.
  - No longer throws an error caused by a race condition with the `sts`
     capability.
+ - Treats empty message tag values (`tag=`) the same way as tags without values
+    (`tag`).
 
 ### Deprecated
 
