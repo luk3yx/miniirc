@@ -13,7 +13,7 @@ If you have previously used miniirc, you may want to read the [deprecations list
 [Python 3.4+]: https://img.shields.io/badge/python-3.4/3.5+-blue.svg
 [Available on PyPI.]: https://img.shields.io/pypi/v/miniirc.svg
 [License: MIT]: https://img.shields.io/pypi/l/miniirc.svg
-[deprecations list]: #Deprecations
+[deprecations list]: #deprecations
 
 ## Parameters
 
