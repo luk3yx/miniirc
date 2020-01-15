@@ -6,7 +6,8 @@ A relatively simple thread-safe(-ish) IRC client framework.
 
 To install miniirc, simply run `pip3 install miniirc` as root.
 
-If you have previously used miniirc, you may want to read the [deprecations list].
+If you have previously used miniirc, you may want to read the
+[deprecations list] (last updated 2020-01-15).
 
 *This repository is available on both [GitHub](https://github.com/luk3yx/miniirc) and [GitLab](https://gitlab.com/luk3yx/miniirc).*
 
@@ -311,8 +312,10 @@ the time of writing this) under active development.
     MUST use Python 2, you could try manually porting miniirc.
  - Python 3.3 and below probably won't work, and fixes will not be added unless
     they are very trivial.
- - Python 3.4 to 3.5, although not recommended, should work, however they are
-    not tested as thoroughly as more recent versions.
+ - Python 3.4 support will be dropped in miniirc v2.1.0 (miniirc v2.0.0 will
+     have backported bugfixes for a few months).
+ - Python 3.5, although not recommended, should work, however it is not tested
+     as thoroughly as more recent versions.
  - Python 3.6 and above should work with the latest stable version of miniirc.
 
 If there is a bug/error in Python 3.4 or newer, please open an issue or pull
@@ -349,8 +352,9 @@ be made:
  - No exceptions will be raised in `irc.quote`/`irc.send` with `force=True`
     when the socket is closed. Instead of relying on these exceptions, use
     `irc.connected` which is set to `None` when completely disconnected.
- - Python 3.4 support will probably be dropped. If you are using Python 3.4, I
-    recommend updating to a more recent version of Python.
+ - As stated in the Python version support section, Python 3.4 support will be
+    dropped in miniirc v2.1.0, however bugfixes will be backported for a few
+    months.
  - The `colon` keyword argument to `Handler` and `CmdHandler` will default to
     `False` instead of `True`.
  - Unspecified hostmasks will be an empty string instead of the command. Don't

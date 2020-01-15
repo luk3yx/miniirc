@@ -8,7 +8,7 @@ Notes:
  - This changelog may contain typographical errors, it is still a
     work-in-progress.
 
-## 1.5.1 - Unreleased
+## 1.5.1 - 2020-01-15
 
 ### Changed
 

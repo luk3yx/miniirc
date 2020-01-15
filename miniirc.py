@@ -2,15 +2,15 @@
 #
 # miniirc - A small-ish IRC framework.
 #
-# © 2019 by luk3yx and other developers of miniirc.
+# © 2018-2020 by luk3yx and other contributors of miniirc.
 #
 
 import atexit, errno, threading, time, socket, ssl, sys
 
 # The version string and tuple
-ver = __version_info__ = (1,5,1, 'a0')
-version = 'miniirc IRC framework v1.5.1a0'
-__version__ = '1.5.1a0'
+ver = __version_info__ = (1,5,1)
+version = 'miniirc IRC framework v1.5.1'
+__version__ = '1.5.1'
 
 # __all__ and _default_caps
 __all__ = ['CmdHandler', 'Handler', 'IRC']
@@ -221,8 +221,8 @@ class IRC:
 
     def send(self, *msg, force=None, tags=None):
         if len(msg) > 1:
-            self.quote(*map(_prune_arg, msg[:-1]), ':' + msg[-1], force=force,
-                tags=tags)
+            self.quote(*tuple(map(_prune_arg, msg[:-1])) + (':' + msg[-1],),
+                force=force, tags=tags)
         else:
             self.quote(*map(_prune_arg, msg), force=force, tags=tags)
 
