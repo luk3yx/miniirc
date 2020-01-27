@@ -19,7 +19,7 @@ If you have previously used miniirc, you may want to read the
 ## Parameters
 
 ~~~py
-irc = miniirc.IRC(ip, port, nick, channels=None, *, ssl=None, ident=None, realname=None, persist=True, debug=False, ns_identity=None, auto_connect=True, ircv3_caps=set(), quit_message='I grew sick and died.', ping_interval=60, verify_ssl=True)
+irc = miniirc.IRC(ip, port, nick, channels=None, *, ssl=None, ident=None, realname=None, persist=True, debug=False, ns_identity=None, auto_connect=True, ircv3_caps=set(), quit_message='I grew sick and died.', ping_interval=60, ping_timeout=None, verify_ssl=True)
 ~~~
 
 *Note that everything before the \* is a positional argument.*
@@ -40,7 +40,8 @@ irc = miniirc.IRC(ip, port, nick, channels=None, *, ssl=None, ident=None, realna
 | `ircv3_caps`  | A set() of additional IRCv3 capabilities to request. SASL is auto-added if `ns_identity` is specified. |
 | `connect_modes` | A mode string (for example `'+B'`) of UMODEs to set when connected. |
 | `quit_message`| Sets the default quit message. This can be modified per-quit with `irc.disconnect()`. |
-| `ping_interval` | If no packets are sent or received for this amount of seconds, miniirc will send a `PING`, and if no reply is sent, after the same timeout, miniirc will attempt to reconnect. Set to `None` to disable. |
+| `ping_interval` | If no packets are sent or received for this amount of seconds, miniirc will send a `PING`, and if no reply is sent, after the ping timeout, miniirc will attempt to reconnect. Set to `None` to disable. |
+| `ping_timeout` | The ping timeout used along side the above `ping_interval` option, if unspecified will default to `ping_interval`. |
 | `verify_ssl`  | Verifies TLS/SSL certificates. Disabling this is not recommended as it opens the IRC connection up to MiTM attacks. If you have trouble with certificate verification, try running `pip3 install certifi` first. |
 
 *The only mandatory parameters are `ip`, `port`, and `nick`.*

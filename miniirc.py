@@ -8,9 +8,9 @@
 import atexit, errno, threading, time, socket, ssl, sys
 
 # The version string and tuple
-ver = __version_info__ = (1,5,1)
-version = 'miniirc IRC framework v1.5.1'
-__version__ = '1.5.1'
+ver = __version_info__ = (1,6,0,'a0')
+version = 'miniirc IRC framework v1.6.0a0'
+__version__ = '1.6.0a0'
 
 # __all__ and _default_caps
 __all__ = ['CmdHandler', 'Handler', 'IRC']
@@ -376,6 +376,8 @@ class IRC:
                         raise
                     else:
                         self._pinged = True
+                        if self.ping_timeout:
+                            self.sock.settimeout(self.ping_timeout)
                         self.quote('PING', ':miniirc-ping', force=True)
                 except socket.error as e:
                     if e.errno != errno.EWOULDBLOCK:
@@ -428,7 +430,7 @@ class IRC:
             ssl=None, ident=None, realname=None, persist=True, debug=False,
             ns_identity=None, auto_connect=True, ircv3_caps=None,
             connect_modes=None, quit_message='I grew sick and died.',
-            ping_interval=60, verify_ssl=True):
+            ping_interval=60, ping_timeout=None, verify_ssl=True):
         # Set basic variables
         self.ip             = ip
         self.port           = int(port)
@@ -446,6 +448,7 @@ class IRC:
         self.connect_modes  = connect_modes
         self.quit_message   = quit_message
         self.ping_interval  = ping_interval
+        self.ping_timeout   = ping_timeout
         self.verify_ssl     = verify_ssl
 
         # Set the NickServ identity
@@ -507,6 +510,8 @@ def _handler(irc, hostmask, args):
 def _handler(irc, hostmask, args):
     if args and args[-1] == 'miniirc-ping':
         irc._pinged = False
+        if irc.ping_interval:
+            irc.sock.settimeout(irc.ping_interval)
 
 @Handler('432', '433')
 def _handler(irc, hostmask, args):
