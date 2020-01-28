@@ -8,6 +8,16 @@ Notes:
  - This changelog may contain typographical errors, it is still a
     work-in-progress.
 
+## 1.6.0 - Unreleased
+
+### Added
+
+ - A `ping_timeout` option (defaults to `ping_interval` for compatibility).
+
+### Changed
+
+ - Removed more potential race conditions.
+
 ## 1.5.1 - 2020-01-15
 
 ### Changed

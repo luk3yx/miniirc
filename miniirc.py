@@ -68,7 +68,7 @@ def _tags_to_dict(tag_list, separator=';'):
             tags[tag[0]] = True
         elif len(tag) == 2:
             if '\\' in tag[1]: # Iteration is bad, only do it if required.
-                value  = ''
+                value = ''
                 escape = False
                 for char in tag[1]: # TODO: Remove this iteration.
                     if escape:
@@ -105,9 +105,9 @@ def ircv3_message_parser(msg):
         if len(i) < 2:
             i.append(i[0])
         hostmask = (hostmask[0], i[0], i[1])
-        cmd      = n[1]
+        cmd = n[1]
     else:
-        cmd      = n[0]
+        cmd = n[0]
         hostmask = (cmd, cmd, cmd)
         n.insert(0, '')
 
@@ -150,17 +150,19 @@ def _dict_to_tags(tags):
 
 # A wrapper for callable logfiles
 class _Logfile:
-    __slots__ = ('_buffer', '_func')
+    __slots__ = ('_buffer', '_func', '_lock')
 
     def write(self, data):
-        self._buffer += data
-        while '\n' in self._buffer:
-            line, self._buffer = self._buffer.split('\n', 1)
-            self._func(line)
+        with self._lock:
+            self._buffer += data
+            while '\n' in self._buffer:
+                line, self._buffer = self._buffer.split('\n', 1)
+                self._func(line)
 
     def __init__(self, func):
         self._buffer = ''
         self._func = func
+        self._lock = threading.Lock()
 
 # Replace invalid RFC1459 characters with Unicode lookalikes
 def _prune_arg(arg):
@@ -170,12 +172,12 @@ def _prune_arg(arg):
 
 # Create the IRC class
 class IRC:
-    connected  = None
+    connected = None
     debug_file = sys.stdout
-    sendq      = None
-    msglen     = 512
+    sendq = None
+    msglen = 512
     _main_lock = None
-    _sasl      = False
+    _sasl = False
     _unhandled_caps = None
 
     # This will no longer be an alias in miniirc v2.0.0.
@@ -192,7 +194,7 @@ class IRC:
     def quote(self, *msg, force=None, tags=None):
         if not tags and msg and isinstance(msg[0], dict):
             tags = msg[0]
-            msg  = msg[1:]
+            msg = msg[1:]
         if self.connected or force:
             if not isinstance(tags, dict) \
                     or ('message-tags' not in self.active_caps
@@ -259,7 +261,7 @@ class IRC:
             self._send_lock.release()
 
         self.debug('Connecting to', self.ip, 'port', self.port)
-        addrinfo  = socket.getaddrinfo(self.ip, self.port, 0,
+        addrinfo = socket.getaddrinfo(self.ip, self.port, 0,
             socket.SOCK_STREAM)[0]
         self.sock = socket.socket(*addrinfo[:2])
         if self.ssl:
@@ -287,7 +289,7 @@ class IRC:
 
     # Disconnect from IRC.
     def disconnect(self, msg=None, *, auto_reconnect=False):
-        self.persist   = auto_reconnect and self.persist
+        self.persist = auto_reconnect and self.persist
         self.connected = None
         self.active_caps.clear()
         atexit.unregister(self.disconnect)
@@ -338,8 +340,8 @@ class IRC:
 
     # Launch handlers
     def _handle(self, cmd, hostmask, tags, args):
-        r        = False
-        cmd      = str(cmd).upper()
+        r = False
+        cmd = str(cmd).upper()
         hostmask = tuple(hostmask)
         for handlers in (_global_handlers, self.handlers):
             if cmd in handlers:
@@ -432,24 +434,24 @@ class IRC:
             connect_modes=None, quit_message='I grew sick and died.',
             ping_interval=60, ping_timeout=None, verify_ssl=True):
         # Set basic variables
-        self.ip             = ip
-        self.port           = int(port)
-        self.nick           = nick
+        self.ip = ip
+        self.port = int(port)
+        self.nick = nick
         if isinstance(channels, str):
             channels = map(str.lstrip, channels.split(','))
-        self.channels       = set(channels or ())
-        self.ident          = ident    or nick
-        self.realname       = realname or nick
-        self.ssl            = ssl
-        self.persist        = persist
-        self.ircv3_caps     = set(ircv3_caps or ()) | _default_caps
-        self.active_caps    = set()
-        self.isupport       = {}
-        self.connect_modes  = connect_modes
-        self.quit_message   = quit_message
-        self.ping_interval  = ping_interval
-        self.ping_timeout   = ping_timeout
-        self.verify_ssl     = verify_ssl
+        self.channels = set(channels or ())
+        self.ident = ident    or nick
+        self.realname = realname or nick
+        self.ssl = ssl
+        self.persist = persist
+        self.ircv3_caps = set(ircv3_caps or ()) | _default_caps
+        self.active_caps = set()
+        self.isupport = {}
+        self.connect_modes = connect_modes
+        self.quit_message = quit_message
+        self.ping_interval = ping_interval
+        self.ping_timeout = ping_timeout
+        self.verify_ssl = verify_ssl
 
         # Set the NickServ identity
         if not ns_identity or isinstance(ns_identity, str):
@@ -470,7 +472,7 @@ class IRC:
 
         # Add handlers and set the default message parser
         self.change_parser()
-        self.handlers   = {}
+        self.handlers = {}
         self._send_lock = threading.Lock()
         if ssl == None and self.port == 6697:
             self.ssl = True
@@ -497,8 +499,9 @@ def _handler(irc, hostmask, args):
         irc.debug('*** Joining channels...', irc.channels)
         irc.quote('JOIN', ','.join(irc.channels))
 
-    if irc.sendq:
+    with self._send_lock:
         sendq, irc.sendq = irc.sendq, None
+    if irc.sendq:
         for i in sendq:
             irc.quote(*i)
 
@@ -548,7 +551,7 @@ def _handler(irc, hostmask, args):
     cmd = args[1].upper()
     if cmd in ('LS', 'NEW'):
         caps = args[-1].split(' ')
-        req  = set()
+        req = set()
         if not irc._unhandled_caps:
             irc._unhandled_caps = {}
         for raw in caps:
@@ -622,7 +625,7 @@ def _handler(irc, hostmask, args):
         irc.debug('NOTICE: An IRCv3 STS has been detected, the port will',
             'be changed to', port, 'and TLS/SSL will be enabled.')
         irc.port = port
-        irc.ssl  = True
+        irc.ssl = True
         time.sleep(1)
         irc.connect()
         irc.persist = persist
