@@ -1,5 +1,10 @@
 # miniirc
 
+# Warning
+
+This branch contains a miniirc v2.0.0 pre-release, the documentation is probably
+out-of-date and breaking changes can and will happen without notice.
+
 [![Python 3.4+]](#python-version-support) [![Available on PyPI.]](https://pypi.org/project/miniirc/) [![License: MIT]](https://github.com/luk3yx/miniirc/blob/master/LICENSE.md)
 
 A relatively simple thread-safe(-ish) IRC client framework.
