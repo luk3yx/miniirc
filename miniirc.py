@@ -125,7 +125,7 @@ def ircv3_message_parser(msg):
         cmd = n[1]
     else:
         cmd = n[0]
-        hostmask = (cmd, cmd, cmd)
+        hostmask = ('', '', '')
         n.insert(0, '')
 
     # Get the command and arguments
@@ -224,8 +224,7 @@ class IRC:
             try: # Apparently try/finally is faster than "with".
                 self.sock.sendall(msg + b'\r\n')
             except (AttributeError, BrokenPipeError):
-                if force:
-                    raise
+                pass
             finally:
                 self._send_lock.release()
         else:
@@ -449,9 +448,10 @@ class IRC:
 
         # Set the NickServ identity
         if not ns_identity or isinstance(ns_identity, str):
-            self.ns_identity = ns_identity
+            self.ns_identity = tuple(ns_identity.split(' ', 1))
         else:
-            self.ns_identity = ' '.join(ns_identity)
+            self.ns_identity = tuple(map(str, ns_identity))
+        assert len(self.ns_identity) == 2
 
         # Set the debug file
         if not debug:
@@ -488,13 +488,13 @@ def _handler(irc, hostmask, args):
         irc.quote('MODE', irc.nick, irc.connect_modes)
     if not irc._sasl and irc.ns_identity:
         irc.debug('Logging in (no SASL, aww)...')
-        irc.msg('NickServ', 'identify ' + irc.ns_identity)
+        irc.msg('NickServ', 'identify', *irc.ns_identity)
     if irc.channels:
         irc.debug('*** Joining channels...', irc.channels)
         irc.quote('JOIN', ','.join(irc.channels))
 
-    with self._send_lock:
-        sendq, irc.sendq = irc.sendq, None
+    with irc._send_lock:
+        sendq, irc._sendq = irc._sendq, None
     if sendq:
         for i in sendq:
             irc.quote(*i)
@@ -593,8 +593,7 @@ def _handler(irc, hostmask, args):
     if args and args[0] == '+':
         from base64 import b64encode
         irc._sasl = True
-        pw = irc.ns_identity.split(' ', 1)
-        pw = '{0}\x00{0}\x00{1}'.format(*pw).encode('utf-8')
+        pw = '{0}\x00{0}\x00{1}'.format(*irc.ns_identity).encode('utf-8')
         irc.quote('AUTHENTICATE', b64encode(pw).decode('utf-8'), force=True)
 
 @Handler('904', '905')
