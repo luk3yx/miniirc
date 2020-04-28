@@ -7,7 +7,7 @@ A relatively simple thread-safe(-ish) IRC client framework.
 To install miniirc, simply run `pip3 install miniirc` as root.
 
 If you have previously used miniirc, you may want to read the
-[deprecations list] (last updated 2020-01-15).
+[deprecations list] (last updated 2020-04-28).
 
 *This repository is available on both [GitHub](https://github.com/luk3yx/miniirc) and [GitLab](https://gitlab.com/luk3yx/miniirc).*
 
@@ -361,6 +361,9 @@ be made:
  - Unspecified hostmasks will be an empty string instead of the command. Don't
     rely on this "feature" if possible, simply ignore the hostmask if you do
     not need it.
+ - The `extended-join` capability will be requested by default, use `args[0]`
+    instead of `args[-1]` to get the channel from a `JOIN` event.
+ - The `tags` keyword argument will be read-only.
 
 ## Working examples/implementations
 
