@@ -5,17 +5,17 @@
 # © 2018-2020 by luk3yx and other contributors of miniirc.
 #
 
-import atexit, errno, threading, time, socket, ssl, sys
+import atexit, errno, threading, time, types, socket, ssl, sys
 
 # The version string and tuple
-ver = __version_info__ = (2,0,0,'a0')
-version = 'miniirc IRC framework v2.0.0a0'
-__version__ = '2.0.0a0'
+ver = __version_info__ = (2,0,0,'a1')
+version = 'miniirc IRC framework v2.0.0a1'
+__version__ = '2.0.0a1'
 
 # __all__ and _default_caps
 __all__ = ['CmdHandler', 'Handler', 'IRC']
 _default_caps = {'account-tag', 'away-notify', 'cap-notify', 'chghost',
-    'draft/message-tags-0.2', 'invite-notify', 'message-tags',
+    'draft/message-tags-0.2', 'extended-join', 'invite-notify', 'message-tags',
     'oragono.io/maxline-2', 'server-time', 'sts'}
 
 # Get the certificate list.
@@ -29,6 +29,7 @@ _global_handlers = {}
 
 class _Handler:
     __slots__ = ('func', 'cmdhandler', 'colon', 'ircv3')
+    Thread = threading.Thread
     def __init__(self, func, *, cmdhandler, colon, ircv3):
         self.func = func
         self.cmdhandler = cmdhandler
@@ -39,12 +40,11 @@ class _Handler:
         if not self.colon and args and args[-1].startswith(':'):
             params[2][-1] = args[-1][1:]
         if self.ircv3:
-            params.insert(2, dict(tags))
+            params.insert(2, tags)
         if self.cmdhandler:
             params.insert(1, command)
 
-        t = threading.Thread(target=self.func, args=params)
-        t.start()
+        self.Thread(target=self.func, args=params).start()
 
 def _add_handler(handlers, events, ircv3, cmdhandler, colon):
     if not events:
@@ -347,6 +347,7 @@ class IRC:
         r = False
         cmd = str(cmd).upper()
         hostmask = tuple(hostmask)
+        tags = types.MappingProxyType(tags)
         for handlers in (_global_handlers, self._handlers):
             if cmd in handlers:
                 r = self._start_handler(handlers[cmd], cmd, hostmask, tags, args)
@@ -447,11 +448,14 @@ class IRC:
         self.verify_ssl = verify_ssl
 
         # Set the NickServ identity
-        if not ns_identity or isinstance(ns_identity, str):
-            self.ns_identity = tuple(ns_identity.split(' ', 1))
+        if ns_identity:
+            if isinstance(ns_identity, str):
+                self.ns_identity = tuple(ns_identity.split(' ', 1))
+            else:
+                self.ns_identity = tuple(map(str, ns_identity))
+            assert len(self.ns_identity) == 2
         else:
-            self.ns_identity = tuple(map(str, ns_identity))
-        assert len(self.ns_identity) == 2
+            self.ns_identity = None
 
         # Set the debug file
         if not debug:
