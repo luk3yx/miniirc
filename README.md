@@ -41,7 +41,7 @@ irc = miniirc.IRC(ip, port, nick, channels=None, *, ssl=None, ident=None, realna
 | `connect_modes` | A mode string (for example `'+B'`) of UMODEs to set when connected. |
 | `quit_message`| Sets the default quit message. This can be modified per-quit with `irc.disconnect()`. |
 | `ping_interval` | If no packets are sent or received for this amount of seconds, miniirc will send a `PING`, and if no reply is sent, after the ping timeout, miniirc will attempt to reconnect. Set to `None` to disable. |
-| `ping_timeout` | The ping timeout used along side the above `ping_interval` option, if unspecified will default to `ping_interval`. |
+| `ping_timeout` | The ping timeout used alongside the above `ping_interval` option, if unspecified will default to `ping_interval`. |
 | `verify_ssl`  | Verifies TLS/SSL certificates. Disabling this is not recommended as it opens the IRC connection up to MiTM attacks. If you have trouble with certificate verification, try running `pip3 install certifi` first. |
 
 *The only mandatory parameters are `ip`, `port`, and `nick`.*
