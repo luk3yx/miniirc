@@ -8,9 +8,9 @@
 import atexit, errno, threading, time, socket, ssl, sys
 
 # The version string and tuple
-ver = __version_info__ = (1,6,0)
-version = 'miniirc IRC framework v1.6.0'
-__version__ = '1.6.0'
+ver = __version_info__ = (1,6,1)
+version = 'miniirc IRC framework v1.6.1'
+__version__ = '1.6.1'
 
 # __all__ and _default_caps
 __all__ = ['CmdHandler', 'Handler', 'IRC']
@@ -499,7 +499,7 @@ def _handler(irc, hostmask, args):
         irc.debug('*** Joining channels...', irc.channels)
         irc.quote('JOIN', ','.join(irc.channels))
 
-    with self._send_lock:
+    with irc._send_lock:
         sendq, irc.sendq = irc.sendq, None
     if irc.sendq:
         for i in sendq:
