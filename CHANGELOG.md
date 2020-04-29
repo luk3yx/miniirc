@@ -8,6 +8,12 @@ Notes:
  - This changelog may contain typographical errors, it is still a
     work-in-progress.
 
+## 1.6.1 - 2020-04-29
+
+### Changed
+
+ - Fix NameError.
+
 ## 1.6.0 - 2020-04-28
 
 ### Added
