@@ -14,9 +14,9 @@ __version__ = '2.0.0a1'
 
 # __all__ and _default_caps
 __all__ = ['CmdHandler', 'Handler', 'IRC']
-_default_caps = {'account-tag', 'away-notify', 'cap-notify', 'chghost',
-    'draft/message-tags-0.2', 'extended-join', 'invite-notify', 'message-tags',
-    'oragono.io/maxline-2', 'server-time', 'sts'}
+_default_caps = {'account-notify', 'account-tag', 'away-notify', 'cap-notify',
+    'chghost', 'draft/message-tags-0.2', 'extended-join', 'invite-notify',
+    'message-tags', 'oragono.io/maxline-2', 'server-time', 'sts'}
 
 # Get the certificate list.
 try:
