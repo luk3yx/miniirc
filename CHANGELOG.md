@@ -8,6 +8,12 @@ Notes:
  - This changelog may contain typographical errors, it is still a
     work-in-progress.
 
+## 1.6.2 - 2020-05-08
+
+### Changed
+
+ - Minor bugfix.
+
 ## 1.6.1 - 2020-04-29
 
 ### Changed
