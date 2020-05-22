@@ -509,9 +509,9 @@ def _handler(irc, hostmask, args):
 
 @Handler('PONG')
 def _handler(irc, hostmask, args):
-    if args and args[-1] == 'miniirc-ping':
+    if args and args[-1] == 'miniirc-ping' and irc.ping_interval:
         irc._pinged = False
-        if irc.ping_interval:
+        if irc.ping_timeout:
             irc.sock.settimeout(irc.ping_interval)
 
 @Handler('432', '433')

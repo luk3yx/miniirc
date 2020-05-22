@@ -8,6 +8,33 @@ Notes:
  - This changelog may contain typographical errors, it is still a
     work-in-progress.
 
+## 1.6.2 - 2020-05-08
+
+### Changed
+
+ - Minor bugfix.
+
+## 1.6.1 - 2020-04-29
+
+### Changed
+
+ - Fix NameError.
+
+## 1.6.0 - 2020-04-28
+
+### Added
+
+ - A `ping_timeout` option (defaults to `ping_interval` for compatibility).
+
+### Changed
+
+ - Removed more potential race conditions.
+
+### Deprecated
+
+ - Relying on `args[-1]` being the channel for `JOIN` events.
+ - Modifying the dict passed to handlers in the `tags` keyword argument.
+
 ## 1.5.1 - 2020-01-15
 
 ### Changed
@@ -244,7 +271,7 @@ pulled from PyPI. Changes from those releases will be mentioned here.*
 
  - Bugfixes.
 
-## 1.0.0
+## 1.0.0 - 2019-01-10
 
 ### Added
 
