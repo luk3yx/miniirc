@@ -380,7 +380,7 @@ Here is a list of some (open-source) bots using miniirc, in alphabetical order:
 
 *Want to add your own bot/client to this list? Open an issue on
 [GitHub](https://github.com/luk3yx/miniirc/issues) or
-[GitLab](https://github.com/luk3yx/miniirc/issues).*
+[GitLab](https://gitlab.com/luk3yx/miniirc/issues).*
 
 [irc-rss-feed-bot]:  https://github.com/impredicative/irc-rss-feed-bot
 [irc-url-title-bot]: https://github.com/impredicative/irc-url-title-bot
