@@ -18,11 +18,22 @@ If you have previously used miniirc, you may want to read the
 
 ## Parameters
 
-~~~py
+```py
 irc = miniirc.IRC(ip, port, nick, channels=None, *, ssl=None, ident=None, realname=None, persist=True, debug=False, ns_identity=None, auto_connect=True, ircv3_caps=set(), quit_message='I grew sick and died.', ping_interval=60, ping_timeout=None, verify_ssl=True)
-~~~
+```
 
 *Note that everything before the \* is a positional argument.*
+
+### Typical usage
+
+You don't need to add every argument, and the `ip`, `port`, `nick`, and
+`channels` arguments should be specified as positional arguments.
+
+```py
+irc = miniirc.IRC('irc.example.com', 6697, 'my-bot', ['#my-channel'], ns_identity=('my-bot', 'hunter2'))
+```
+
+### Parameter descriptions
 
 | Parameter     | Description                                                |
 | ------------- | -------------------------------------------------------- |
@@ -118,7 +129,7 @@ specific IRC objects (`irc.Handler`).
 
 The basic syntax for a handler is as followed, where `*events` is a list of events (`PRIVMSG`, `NOTICE`, etc) are called.
 
-~~~py
+```py
 import miniirc
 @miniirc.Handler(*events, colon=False)
 def handler(irc, hostmask, args):
@@ -131,7 +142,7 @@ def handler(irc, hostmask, args):
     #             breaking, always set it to False unless you know what you are
     #             doing.
     pass
-~~~
+```
 
 #### Recommendations when using handlers:
 
@@ -188,12 +199,12 @@ handlers as `dict`s, with values of either strings or `True`.
 
 *miniirc will automatically un-escape IRCv3 tag values.*
 
-~~~py
+```py
 import miniirc
 @miniirc.Handler(*events, colon=False, ircv3=True)
 def handler(irc, hostmask, tags, args):
     pass
-~~~
+```
 
 #### IRCv3 capabilities
 
@@ -202,7 +213,7 @@ You must use `force=True` on any `irc.quote()` called here, as when this is
 called, miniirc may not yet be fully connected. Do not use the `colon` argument
 for `Handler` when creating these handlers to avoid unexpected side-effects.
 
-~~~py
+```py
 import miniirc
 @miniirc.Handler('IRCv3 my-cap-name')
 def handler(irc, hostmask, args):
@@ -216,7 +227,7 @@ def handler(irc, hostmask, args):
 
     # Remove the capability from the processing list.
     irc.finish_negotiation(args[0]) # This can also be 'my-cap-name'.
-~~~
+```
 
 ### Custom message parsers
 
@@ -230,14 +241,14 @@ type as the items expected by handlers (and `cmd` should be a string).
 
 This message parser makes the normal parser allow `~` as an IRCv3 tag prefix character.
 
-~~~py
+```py
 import miniirc
 
 def my_message_parser(msg):
     if msg.startswith('~'):
         msg = '@' + msg[1:]
     return miniirc.ircv3_message_parser(msg)
-~~~
+```
 
 #### Changing message parsers
 
@@ -246,11 +257,11 @@ specified, it will default to the built-in parser. You can only change message p
 on-the-fly (for example in an IRCv3 CAP handler). If you need to change message parsers
 before connecting, you can disable `auto_connect` and change it then.
 
-~~~py
+```py
 irc = miniirc.IRC(..., auto_connect=False)
 irc.change_parser(my_message_parser)
 irc.connect()
-~~~
+```
 
 ### Handling multiple events
 
@@ -271,7 +282,7 @@ handler will be called many times while connecting (and once connected).
 
 ### Example
 
-~~~py
+```py
 import miniirc
 
 # Not required, however this makes sure miniirc isn't insanely outdated.
@@ -287,7 +298,7 @@ def cmdhandler(irc, command, hostmask, args):
     print(hostmask[0], 'sent a', command, 'to', args[0], 'with content',
         args[1])
     # nickname sent a PRIVMSG to #channel with content Hello, world!
-~~~
+```
 
 This will print a line whenever the bot gets a `PRIVMSG` or `NOTICE`.
 
