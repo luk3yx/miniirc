@@ -1,0 +1,26 @@
+# From https://docs.github.com/en/free-pro-team@latest/actions/guides/building-and-testing-python
+
+name: Test with pytest
+
+on: [push]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        python_version: [3.4, 3.5, 3.6, 3.7, 3.8, 3.9, pypy3]
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python ${{ matrix.python_version }}
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python_version }}
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install certifi pytest
+    - name: Run pytest
+      run: pytest
