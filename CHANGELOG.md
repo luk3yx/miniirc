@@ -8,6 +8,16 @@ Notes:
  - This changelog may contain typographical errors, it is still a
     work-in-progress.
 
+## 1.6.3 - 2020-10-20
+
+### Added
+
+ - Unit tests.
+
+### Changed
+
+ - Fix 432 (ERR_NICKNAMENUSE) handling.
+
 ## 1.6.2 - 2020-05-08
 
 ### Changed
