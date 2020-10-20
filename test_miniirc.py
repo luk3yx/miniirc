@@ -1,5 +1,5 @@
 #!/bin/false
-import collections, miniirc
+import collections, functools, miniirc, queue, random, socket, threading
 
 def test_ensure_v1():
     assert miniirc.ver <= (2, 0, 0)
@@ -156,3 +156,108 @@ def test_get_ca_certs():
         assert miniirc.get_ca_certs() is None
     else:
         assert miniirc.get_ca_certs() == certifi.where()
+
+def test_main_loop():
+    irc = err = None
+
+    # Prevent miniirc catching fakesocket errors
+    def catch_errors(func):
+        @functools.wraps(func)
+        def wrapper(self, *args, **kwargs):
+            nonlocal err
+            try:
+                return func(self, *args, **kwargs)
+            except Exception as e:
+                err = err or e
+                if miniirc.ver >= (2, 0, 0):
+                    self._sock.close()
+                else:
+                    self.sock.close()
+        return wrapper
+
+    fixed_responses = {
+        'CAP LS 302': 'CAP * LS :abc sasl account-tag',
+        'CAP REQ :account-tag sasl': 'CAP miniirc-test ACK :sasl account-tag',
+        'CAP REQ :sasl account-tag': 'CAP miniirc-test ACK :account-tag sasl',
+        'AUTHENTICATE PLAIN': 'AUTHENTICATE +',
+        'AUTHENTICATE dGVzdAB0ZXN0AGh1bnRlcjI=': '903',
+        'CAP END': '001 parameter test :with colon',
+        'USER miniirc-test 0 * :miniirc-test': '',
+        'NICK miniirc-test': '',
+        'QUIT :I grew sick and died.': '',
+    }
+
+    class fakesocket(socket.socket):
+        @catch_errors
+        def __init__(self, __family, __type):
+            assert __family in (socket.AF_INET, socket.AF_INET6)
+            assert __type == socket.SOCK_STREAM
+
+        @catch_errors
+        def connect(self, __addr):
+            assert __addr[1] == 6667
+            self._recvq = queue.Queue()
+
+        @catch_errors
+        def send(self, data):
+            raise ValueError('socket.send() used in place of socket.sendall()')
+
+        @catch_errors
+        def sendall(self, data):
+            msg = data.decode('utf-8')
+            assert msg.endswith('\r\n')
+            msg = msg[:-2]
+            assert msg in fixed_responses
+            if self._recvq is None:
+                return
+            for line in fixed_responses[msg].split('\n'):
+                self._recvq.put(line.encode('utf-8') +
+                    random.choice((b'\r', b'\n', b'\r\n', b'\n\r')))
+
+        @catch_errors
+        def recv(self, chunk_size):
+            assert chunk_size == 8192
+            if err is not None or self._recvq is None:
+                return b''
+            else:
+                return self._recvq.get()
+
+        def close(self):
+            nonlocal err
+            err = err or BrokenPipeError('Socket closed')
+            event.set()
+            if self._recvq:
+                self._recvq.put(b'')
+                self._recvq = None
+
+        def settimeout(self, t):
+            assert t == 60
+
+    socket.socket = fakesocket
+
+    try:
+        event = threading.Event()
+        irc = miniirc.IRC('example.com', 6667, 'miniirc-test',
+            auto_connect=False, ns_identity=('test', 'hunter2'), persist=False)
+        assert irc.connected is None
+        @irc.Handler('001', colon=False)
+        @catch_errors
+        def _handle_001(irc, hostmask, args):
+            assert args == ['parameter', 'test', 'with colon']
+            event.set()
+
+        irc.connect()
+        assert event.wait(3) or err is not None
+        if err is not None:
+            raise err
+        assert irc.connected
+        assert irc.nick == 'miniirc-test'
+        if miniirc.ver >= (2, 0, 0):
+            assert irc.nick.startswith('miniirc-test')
+        else:
+            assert irc.current_nick == irc.nick
+    finally:
+        socket.socket = fakesocket.__bases__[0]
+        if err is not None:
+            raise err
+        irc.disconnect()
