@@ -1,10 +1,8 @@
 #!/bin/false
 import collections, functools, miniirc, queue, random, socket, threading, time
 
-def test_ensure_v1():
-    assert miniirc.ver <= (2, 0, 0)
-
-if miniirc.ver >= (2, 0, 0):
+MINIIRC_V2 = miniirc.ver >= (2, 0, 0)
+if MINIIRC_V2:
     def fill_in_hostmask(cmd, hostmask):
         while len(hostmask) < 3:
             hostmask += ('',)
@@ -42,37 +40,49 @@ def test_message_parser():
             ('Hi', hostmask, {'tag1': 'value; with \\spaces\rand\nnewlines',
             'tag2': True, 'tag3': True}, []))
 
+if MINIIRC_V2:
+    def verify_handler(event, cmdhandler, colon, ircv3):
+        handler = miniirc._global_handlers[event][-1]
+        assert handler.cmdhandler == cmdhandler
+        assert handler.colon == colon
+        assert handler.ircv3 == ircv3
+else:
+    def verify_handler(event, cmdhandler, colon, ircv3):
+        func = miniirc._global_handlers[event][-1]
+        assert hasattr(func, 'miniirc_colon') == colon
+        assert hasattr(func, 'miniirc_cmd_arg') == cmdhandler
+        assert hasattr(func, 'miniirc_ircv3') == ircv3
+
 def test_Handler():
     try:
         tmp, miniirc._global_handlers = miniirc._global_handlers, {}
         @miniirc.Handler('test', 1, ircv3=True, colon=False)
         def f(irc, hostmask, tags, args):
             ...
-        assert not hasattr(f, 'miniirc_cmd_arg')
-        assert not hasattr(f, 'miniirc_colon')
-        assert hasattr(f, 'miniirc_ircv3')
+        verify_handler('TEST', False, False, True)
 
         @miniirc.CmdHandler('test2', 2, colon=True)
         def f2(irc, command, hostmask, args):
             ...
-        assert hasattr(f2, 'miniirc_colon')
-        assert hasattr(f2, 'miniirc_cmd_arg')
-        assert not hasattr(f2, 'miniirc_ircv3')
+        verify_handler('2', True, True, False)
 
         @miniirc.CmdHandler()
         def f3(irc, command, hostmask, args):
             ...
-        assert hasattr(f3, 'miniirc_cmd_arg')
-        assert hasattr(f3, 'miniirc_colon')
-        assert not hasattr(f3, 'miniirc_ircv3')
+        verify_handler(None, True, not MINIIRC_V2, False)
 
-        assert miniirc._global_handlers == {
+        expected = {
             'TEST': [f],
             '1': [f],
             'TEST2': [f2],
             '2': [f2],
             None: [f3]
         }
+
+        if MINIIRC_V2:
+            assert miniirc._global_handlers.keys() == expected.keys()
+        else:
+            assert miniirc._global_handlers == expected
     finally:
         miniirc._global_handlers = tmp
 
@@ -169,7 +179,7 @@ def test_connection():
                 return func(self, *args, **kwargs)
             except Exception as e:
                 err = err or e
-                if miniirc.ver >= (2, 0, 0):
+                if MINIIRC_V2:
                     self._sock.close()
                 else:
                     self.sock.close()
@@ -264,7 +274,7 @@ def test_connection():
         if err is not None:
             raise err
         assert irc.connected
-        if miniirc.ver >= (2, 0, 0):
+        if MINIIRC_V2:
             assert irc.nick == 'miniirc-test'
             assert irc.current_nick == 'miniirc-test_'
         else:
