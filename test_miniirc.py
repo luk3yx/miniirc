@@ -1,5 +1,5 @@
 #!/bin/false
-import collections, functools, miniirc, queue, random, socket, threading
+import collections, functools, miniirc, queue, random, socket, threading, time
 
 def test_ensure_v1():
     assert miniirc.ver <= (2, 0, 0)
@@ -157,7 +157,7 @@ def test_get_ca_certs():
     else:
         assert miniirc.get_ca_certs() == certifi.where()
 
-def test_main_loop():
+def test_connection():
     irc = err = None
 
     # Prevent miniirc catching fakesocket errors
@@ -181,9 +181,16 @@ def test_main_loop():
         'CAP REQ :sasl account-tag': 'CAP miniirc-test ACK :account-tag sasl',
         'AUTHENTICATE PLAIN': 'AUTHENTICATE +',
         'AUTHENTICATE dGVzdAB0ZXN0AGh1bnRlcjI=': '903',
-        'CAP END': '001 parameter test :with colon',
-        'USER miniirc-test 0 * :miniirc-test': '',
-        'NICK miniirc-test': '',
+        'CAP END': (
+            '001 parameter test :with colon\n'
+            '005 * CAP=END :isupport description\n'
+        ),
+        'USER miniirc-test 0 * :miniirc-test':
+            ':a PRIVMSG miniirc-test :\x01VERSION\x01',
+        'NICK miniirc-test': '432',
+        'NICK miniirc-test_': '',
+        f'NOTICE a :\x01VERSION {miniirc.version}\x01':
+            '005 miniirc-test CTCP=VERSION :are supported by this server',
         'QUIT :I grew sick and died.': '',
     }
 
@@ -238,12 +245,18 @@ def test_main_loop():
     try:
         event = threading.Event()
         irc = miniirc.IRC('example.com', 6667, 'miniirc-test',
-            auto_connect=False, ns_identity=('test', 'hunter2'), persist=False)
+            auto_connect=False, ns_identity=('test', 'hunter2'), persist=False,
+            debug=True)
         assert irc.connected is None
         @irc.Handler('001', colon=False)
         @catch_errors
         def _handle_001(irc, hostmask, args):
+            for i in range(100):
+                if 'CAP' in irc.isupport and 'CTCP' in irc.isupport:
+                    break
+                time.sleep(0.001)
             assert args == ['parameter', 'test', 'with colon']
+            assert irc.isupport == {'CTCP': 'VERSION', 'CAP': 'END'}
             event.set()
 
         irc.connect()
@@ -251,11 +264,11 @@ def test_main_loop():
         if err is not None:
             raise err
         assert irc.connected
-        assert irc.nick == 'miniirc-test'
         if miniirc.ver >= (2, 0, 0):
-            assert irc.nick.startswith('miniirc-test')
+            assert irc.nick == 'miniirc-test'
+            assert irc.current_nick == 'miniirc-test_'
         else:
-            assert irc.current_nick == irc.nick
+            assert irc.nick == irc.current_nick == 'miniirc-test_'
     finally:
         socket.socket = fakesocket.__bases__[0]
         if err is not None:

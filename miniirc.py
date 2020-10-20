@@ -526,8 +526,7 @@ def _handler(irc, hostmask, args):
         if len(irc.nick) >= irc.isupport.get('NICKLEN', 20):
             return
         irc.debug('WARNING: The requested nickname', repr(irc.nick), 'is '
-            'invalid. Trying again with', repr(irc.nick + '_') + '...',
-            file=sys.stderr)
+            'invalid. Trying again with', repr(irc.nick + '_') + '...')
         irc.nick += '_'
         irc.quote('NICK', irc.nick, force=True)
 
