@@ -8,9 +8,9 @@
 import atexit, errno, threading, time, types, socket, ssl, sys
 
 # The version string and tuple
-ver = __version_info__ = (2,0,0,'a1')
-version = 'miniirc IRC framework v2.0.0a1'
-__version__ = '2.0.0a1'
+ver = __version_info__ = (2,0,0,'a2')
+version = 'miniirc IRC framework v2.0.0a2'
+__version__ = '2.0.0a2'
 
 # __all__ and _default_caps
 __all__ = ['CmdHandler', 'Handler', 'IRC']
@@ -117,10 +117,10 @@ def ircv3_message_parser(msg):
             n.append('')
         hostmask = n[0][1:].split('!', 1)
         if len(hostmask) < 2:
-            hostmask.append(hostmask[0])
+            hostmask.append('')
         i = hostmask[1].split('@', 1)
         if len(i) < 2:
-            i.append(i[0])
+            i.append('')
         hostmask = (hostmask[0], i[0], i[1])
         cmd = n[1]
     else:
@@ -172,11 +172,9 @@ class _Logfile:
     def write(self, data):
         with self._lock:
             self._buffer += data
-
-    def flush(self):
-        with self._lock:
-            self._func(self._buffer)
-            self._buffer = ''
+            while '\n' in self._buffer:
+                line, self._buffer = self._buffer.split('\n', 1)
+                self._func(line)
 
     def __init__(self, func):
         self._buffer = ''
@@ -525,9 +523,9 @@ def _handler(irc, hostmask, args):
             return
         irc.debug('WARNING: The requested nickname', repr(irc.current_nick),
             'is invalid. Trying again with', repr(irc.current_nick + '_') +
-            '...', file=sys.stderr)
+            '...')
         irc.current_nick += '_'
-        irc.quote('NICK', irc.nick, force=True)
+        irc.quote('NICK', irc.current_nick, force=True)
 
 @Handler('NICK')
 def _handler(irc, hostmask, args):
