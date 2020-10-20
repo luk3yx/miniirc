@@ -199,7 +199,7 @@ def test_connection():
             ':a PRIVMSG miniirc-test :\x01VERSION\x01',
         'NICK miniirc-test': '432',
         'NICK miniirc-test_': '',
-        f'NOTICE a :\x01VERSION {miniirc.version}\x01':
+        'NOTICE a :\x01VERSION ' + miniirc.version + '\x01':
             '005 miniirc-test CTCP=VERSION :are supported by this server',
         'QUIT :I grew sick and died.': '',
     }
