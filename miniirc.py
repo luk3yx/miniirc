@@ -2,7 +2,7 @@
 #
 # miniirc - A small-ish IRC framework.
 #
-# © 2018-2020 by luk3yx and other contributors of miniirc.
+# © 2018-2021 by luk3yx and other contributors of miniirc.
 #
 
 import atexit, errno, threading, time, types, socket, ssl, sys
