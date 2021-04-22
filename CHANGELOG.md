@@ -8,6 +8,19 @@ Notes:
  - This changelog may contain typographical errors, it is still a
     work-in-progress.
 
+## 1.7.0 - Unreleased
+
+### Added
+
+ - The ability to make miniirc run handlers in thread pools using the
+    "executor" keyword argument.
+
+### Changed
+
+ - Fixed truncation of strings containing non-ASCII characters.
+ - A couple of catch-all `execpt` statements now only handle more specific
+    exceptions.
+
 ## 1.6.3 - 2020-10-20
 
 ### Added
