@@ -22,7 +22,8 @@ _default_caps = {'account-tag', 'away-notify', 'cap-notify', 'chghost',
 try:
     from certifi import where as get_ca_certs
 except ImportError:
-    get_ca_certs = lambda : None
+    def get_ca_certs():
+        pass
 
 # Create global handlers
 _global_handlers = {}
@@ -183,6 +184,60 @@ class IRC:
     # This will no longer be an alias in miniirc v2.0.0.
     current_nick = property(lambda self : self.nick)
 
+    def __init__(self, ip, port, nick, channels=None, *, ssl=None, ident=None,
+                 realname=None, persist=True, debug=False, ns_identity=None,
+                 auto_connect=True, ircv3_caps=None, connect_modes=None,
+                 quit_message='I grew sick and died.', ping_interval=60,
+                 ping_timeout=None, verify_ssl=True):
+        # Set basic variables
+        self.ip = ip
+        self.port = int(port)
+        self.nick = nick
+        if isinstance(channels, str):
+            channels = map(str.lstrip, channels.split(','))
+        self.channels = set(channels or ())
+        self.ident = ident or nick
+        self.realname = realname or nick
+        self.ssl = ssl
+        self.persist = persist
+        self.ircv3_caps = set(ircv3_caps or ()) | _default_caps
+        self.active_caps = set()
+        self.isupport = {}
+        self.connect_modes = connect_modes
+        self.quit_message = quit_message
+        self.ping_interval = ping_interval
+        self.ping_timeout = ping_timeout
+        self.verify_ssl = verify_ssl
+
+        # Set the NickServ identity
+        if not ns_identity or isinstance(ns_identity, str):
+            self.ns_identity = ns_identity
+        else:
+            self.ns_identity = ' '.join(ns_identity)
+
+        # Set the debug file
+        if not debug:
+            self.debug_file = None
+        elif hasattr(debug, 'write'):
+            self.debug_file = debug
+        elif hasattr(debug, '__call__'):
+            self.debug_file = _Logfile(debug)
+
+        # Add IRCv3 capabilities.
+        if self.ns_identity:
+            self.ircv3_caps.add('sasl')
+
+        # Add handlers and set the default message parser
+        self.change_parser()
+        self.handlers = {}
+        self._send_lock = threading.Lock()
+        if ssl is None and self.port == 6697:
+            self.ssl = True
+
+        # Start the connection
+        if auto_connect:
+            self.connect()
+
     # Debug print()
     def debug(self, *args, **kwargs):
         if self.debug_file:
@@ -195,45 +250,53 @@ class IRC:
         if not tags and msg and isinstance(msg[0], dict):
             tags = msg[0]
             msg = msg[1:]
-        if self.connected or force:
-            if not isinstance(tags, dict) \
-                    or ('message-tags' not in self.active_caps
-                    and 'draft/message-tags-0.2' not in self.active_caps):
-                tags = None
-            self.debug('>3> ' + str(tags) if tags else '>>>', *msg)
-            msg = ' '.join(msg).replace('\r', ' ').replace('\n', ' ').encode(
-                'utf-8')[:self.msglen - 2]
-            if tags:
-                msg = _dict_to_tags(tags) + msg
-            self._send_lock.acquire()
-            try: # Apparently try/finally is faster than "with".
-                self.sock.sendall(msg + b'\r\n')
-            except (AttributeError, BrokenPipeError):
-                if force:
-                    raise
-            finally:
-                self._send_lock.release()
-        else:
+        if not self.connected and not force:
             self.debug('>Q>', *msg)
             if not self.sendq:
                 self.sendq = []
             if tags:
                 msg = (tags,) + msg
             self.sendq.append(msg)
+            return
+
+        if (not isinstance(tags, dict)
+                or ('message-tags' not in self.active_caps and
+                    'draft/message-tags-0.2' not in self.active_caps)):
+            tags = None
+        self.debug('>3> ' + repr(tags) if tags else '>>>', *msg)
+        msg = (' '.join(msg).encode('utf-8').replace(b'\r', b' ')
+               .replace(b'\n', b' '))
+
+        if len(msg) + 2 > self.msglen:
+            msg = msg[:self.msglen - 2]
+            if msg[-1] >= 0x80:
+                msg = msg.decode('utf-8', 'ignore').encode('utf-8')
+
+        if tags:
+            msg = _dict_to_tags(tags) + msg
+
+        self._send_lock.acquire()
+        try: # Apparently try/finally is faster than "with".
+            self.sock.sendall(msg + b'\r\n')
+        except (AttributeError, BrokenPipeError):
+            if force:
+                raise
+        finally:
+            self._send_lock.release()
 
     def send(self, *msg, force=None, tags=None):
         if len(msg) > 1:
             self.quote(*tuple(map(_prune_arg, msg[:-1])) + (':' + msg[-1],),
                 force=force, tags=tags)
         else:
-            self.quote(*map(_prune_arg, msg), force=force, tags=tags)
+            self.quote(command, force=force, tags=tags)
 
     # User-friendly msg, notice, and CTCP functions.
     def msg(self, target, *msg, tags=None):
-        self.quote('PRIVMSG', str(target), ':' + ' '.join(msg), tags=tags)
+        self.quote('PRIVMSG', target, ':' + ' '.join(msg), tags=tags)
 
     def notice(self, target, *msg, tags=None):
-        self.quote('NOTICE', str(target), ':' + ' '.join(msg), tags=tags)
+        self.quote('NOTICE', target, ':' + ' '.join(msg), tags=tags)
 
     def ctcp(self, target, *msg, reply=False, tags=None):
         m = (self.notice if reply else self.msg)
@@ -345,7 +408,8 @@ class IRC:
         hostmask = tuple(hostmask)
         for handlers in (_global_handlers, self.handlers):
             if cmd in handlers:
-                r = self._start_handler(handlers[cmd], cmd, hostmask, tags, args)
+                r = self._start_handler(handlers[cmd], cmd, hostmask, tags,
+                                        args)
 
             if None in handlers:
                 self._start_handler(handlers[None], cmd, hostmask, tags, args)
@@ -426,60 +490,6 @@ class IRC:
         self._main_lock = threading.Thread(target=self._main)
         self._main_lock.start()
         return self._main_lock
-
-    # Initialize the class
-    def __init__(self, ip, port, nick, channels=None, *,
-            ssl=None, ident=None, realname=None, persist=True, debug=False,
-            ns_identity=None, auto_connect=True, ircv3_caps=None,
-            connect_modes=None, quit_message='I grew sick and died.',
-            ping_interval=60, ping_timeout=None, verify_ssl=True):
-        # Set basic variables
-        self.ip = ip
-        self.port = int(port)
-        self.nick = nick
-        if isinstance(channels, str):
-            channels = map(str.lstrip, channels.split(','))
-        self.channels = set(channels or ())
-        self.ident = ident    or nick
-        self.realname = realname or nick
-        self.ssl = ssl
-        self.persist = persist
-        self.ircv3_caps = set(ircv3_caps or ()) | _default_caps
-        self.active_caps = set()
-        self.isupport = {}
-        self.connect_modes = connect_modes
-        self.quit_message = quit_message
-        self.ping_interval = ping_interval
-        self.ping_timeout = ping_timeout
-        self.verify_ssl = verify_ssl
-
-        # Set the NickServ identity
-        if not ns_identity or isinstance(ns_identity, str):
-            self.ns_identity = ns_identity
-        else:
-            self.ns_identity = ' '.join(ns_identity)
-
-        # Set the debug file
-        if not debug:
-            self.debug_file = None
-        elif hasattr(debug, 'write'):
-            self.debug_file = debug
-        elif hasattr(debug, '__call__'):
-            self.debug_file = _Logfile(debug)
-
-        # Add IRCv3 capabilities.
-        if self.ns_identity: self.ircv3_caps.add('sasl')
-
-        # Add handlers and set the default message parser
-        self.change_parser()
-        self.handlers = {}
-        self._send_lock = threading.Lock()
-        if ssl == None and self.port == 6697:
-            self.ssl = True
-
-        # Start the connection
-        if auto_connect:
-            self.connect()
 
 # Handle some IRC messages by default.
 @Handler('001')

@@ -134,9 +134,9 @@ class IRCQuoteWrapper(DummyIRC):
 
 def test_irc_send():
     test = IRCQuoteWrapper.make_test('send')
-    assert test('Hello world!') == ('Hello\xa0world!', None)
-    assert (test('abc def\r\n', ':ghi', ':jkl', tags={'a': 'b'}) ==
-            ('abc\xa0def\xa0\xa0 \u0703ghi ::jkl', {'a': 'b'}))
+    assert test('a', 'Hello world!', 'b') == ('a Hello\xa0world! :b', None)
+    assert (test('', 'abc def\r\n', ':ghi', ':jkl', tags={'a': 'b'}) ==
+            (' abc\xa0def\xa0\xa0 \u0703ghi ::jkl', {'a': 'b'}))
 
 irc_msg_funcs = {
     'msg': 'PRIVMSG {} :{}',
