@@ -435,7 +435,8 @@ class IRC:
                 assert len(buffer) < 65535, 'Very long line detected!'
                 try:
                     raw = self.sock.recv(8192).replace(b'\r', b'\n')
-                    assert raw
+                    if not raw:
+                        raise ConnectionAbortedError
                     buffer += raw
                 except socket.timeout:
                     if self._pinged:
@@ -448,7 +449,7 @@ class IRC:
                 except socket.error as e:
                     if e.errno != errno.EWOULDBLOCK:
                         raise
-            except Exception as e:
+            except (OSError, socket.error) as e:
                 self.debug('Lost connection!', repr(e))
                 self.disconnect(auto_reconnect=True)
                 while self.persist:
@@ -457,7 +458,7 @@ class IRC:
                     self._main_lock = None
                     try:
                         self.connect()
-                    except:
+                    except (OSError, socket.error):
                         self.debug('Failed to reconnect!')
                         self.connected = None
                     else:
