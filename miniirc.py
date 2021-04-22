@@ -8,9 +8,9 @@
 import atexit, errno, threading, time, socket, ssl, sys
 
 # The version string and tuple
-ver = __version_info__ = (1,6,3)
-version = 'miniirc IRC framework v1.6.3'
-__version__ = '1.6.3'
+ver = __version_info__ = (1,7,0,'a0')
+version = 'miniirc IRC framework v1.7.0a0'
+__version__ = '1.7.0'
 
 # __all__ and _default_caps
 __all__ = ['CmdHandler', 'Handler', 'IRC']
@@ -188,7 +188,7 @@ class IRC:
                  realname=None, persist=True, debug=False, ns_identity=None,
                  auto_connect=True, ircv3_caps=None, connect_modes=None,
                  quit_message='I grew sick and died.', ping_interval=60,
-                 ping_timeout=None, verify_ssl=True):
+                 ping_timeout=None, verify_ssl=True, executor=None):
         # Set basic variables
         self.ip = ip
         self.port = int(port)
@@ -208,6 +208,7 @@ class IRC:
         self.ping_interval = ping_interval
         self.ping_timeout = ping_timeout
         self.verify_ssl = verify_ssl
+        self._executor = executor
 
         # Set the NickServ identity
         if not ns_identity or isinstance(ns_identity, str):
@@ -397,8 +398,10 @@ class IRC:
             if hasattr(handler, 'miniirc_cmd_arg'):
                 params.insert(1, command)
 
-            t = threading.Thread(target=handler, args=params)
-            t.start()
+            if self._executor is None:
+                threading.Thread(target=handler, args=params).start()
+            else:
+                self._executor.submit(handler, *params)
         return r
 
     # Launch handlers
@@ -627,7 +630,7 @@ def _handler(irc, hostmask, args):
     if not irc.ssl and len(args) == 2:
         try:
             port = int(_tags_to_dict(args[1], ',')['port'])
-        except:
+        except (IndexError, ValueError):
             return
 
         persist = irc.persist

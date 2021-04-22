@@ -151,6 +151,22 @@ def test_irc_msg_funcs():
         assert (test('target', 'hello', 'world', tags={'abc': 'def'}) ==
             (fmt.format('target', 'hello world'), {'abc': 'def'}))
 
+class FakeExecutor:
+    submissions = 0
+    def submit(self, *args):
+        assert args == self.expected_args
+        self.submissions += 1
+
+def test_executor():
+    executor = FakeExecutor()
+    irc = DummyIRC(executor=executor)
+    def fake_handler():
+        pass
+    executor.expected_args = (fake_handler, irc, ('a', 'b', 'c'), ['d'])
+    irc.Handler('test')(fake_handler)
+    irc._handle('test', ('a', 'b', 'c'), {}, ['d'])
+    assert executor.submissions == 1
+
 def test_change_parser():
     irc = DummyIRC()
     assert irc._parse == miniirc.ircv3_message_parser
