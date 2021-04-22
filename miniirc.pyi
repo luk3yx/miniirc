@@ -2,9 +2,9 @@
 # This allows type checking without breaking compatibility or making the main
 #   file slower to load.
 
-import atexit, errno, io, threading, time, socket, ssl, sys
-from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Tuple, \
-    Union, overload
+import atexit, concurrent.futures, errno, io, threading, time, socket, ssl, sys
+from typing import (Any, Callable, Dict, Iterable, List, Optional, Set, Tuple,
+                    Union, overload)
 
 if sys.version_info >= (3, 8):
     from typing import Literal
@@ -189,4 +189,5 @@ class IRC:
         auto_connect: bool = True, ircv3_caps: Optional[Set[str]] = None,
         connect_modes: Optional[str] = None,
         quit_message: str = 'I grew sick and died.', ping_interval: int = 60,
-        verify_ssl: bool = True) -> None: ...
+        verify_ssl: bool = True,
+        executor: Optional[concurrent.futures.ThreadPoolExecutor]) -> None: ...
