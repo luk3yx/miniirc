@@ -290,7 +290,7 @@ class IRC:
             self.quote(*tuple(map(_prune_arg, msg[:-1])) + (':' + msg[-1],),
                 force=force, tags=tags)
         else:
-            self.quote(command, force=force, tags=tags)
+            self.quote(*msg, force=force, tags=tags)
 
     # User-friendly msg, notice, and CTCP functions.
     def msg(self, target, *msg, tags=None):
