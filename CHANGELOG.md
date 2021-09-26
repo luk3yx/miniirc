@@ -16,7 +16,7 @@ Notes:
     "executor" keyword argument. I strongly recommend using this
     (`executor=concurrent.futures.ThreadPoolExecutor()`) if you plan to support
     Python 3.7 to 3.8 because of a memory leak
-    (see [BPO 36402](https://bugs.python.org/issue36402) for more information).
+    (see [BPO 37788](https://bugs.python.org/issue37788) for more information).
 
 ### Changed
 
