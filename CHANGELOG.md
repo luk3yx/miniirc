@@ -8,12 +8,15 @@ Notes:
  - This changelog may contain typographical errors, it is still a
     work-in-progress.
 
-## 1.7.0 - Unreleased
+## 1.7.0 - 2021-09-26
 
 ### Added
 
  - The ability to make miniirc run handlers in thread pools using the
-    "executor" keyword argument.
+    "executor" keyword argument. I strongly recommend using this
+    (`executor=concurrent.futures.ThreadPoolExecutor()`) if you plan to support
+    Python 3.7 to 3.8 because of a memory leak
+    (see [BPO 36402](https://bugs.python.org/issue36402) for more information).
 
 ### Changed
 

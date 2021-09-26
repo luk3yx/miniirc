@@ -30,7 +30,7 @@ You don't need to add every argument, and the `ip`, `port`, `nick`, and
 `channels` arguments should be specified as positional arguments.
 
 ```py
-irc = miniirc.IRC('irc.example.com', 6697, 'my-bot', ['#my-channel'], ns_identity=('my-bot', 'hunter2'))
+irc = miniirc.IRC('irc.example.com', 6697, 'my-bot', ['#my-channel'], ns_identity=('my-bot', 'hunter2'), executor=concurrent.futures.ThreadPoolExecutor())
 ```
 
 ### Parameter descriptions
