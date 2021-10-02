@@ -21,7 +21,7 @@ Notes:
 ### Changed
 
  - Fixed truncation of strings containing non-ASCII characters.
- - A couple of catch-all `execpt` statements now only handle more specific
+ - A couple of catch-all `except` statements now only handle more specific
     exceptions.
 
 ## 1.6.3 - 2020-10-20
