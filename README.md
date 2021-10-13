@@ -4,7 +4,7 @@
 
 A relatively simple thread-safe(-ish) IRC client framework.
 
-To install miniirc, simply run `pip3 install miniirc` as root.
+To install miniirc, simply run `pip3 install miniirc`.
 
 If you have previously used miniirc, you may want to read the
 [deprecations list] (last updated 2020-04-28).
