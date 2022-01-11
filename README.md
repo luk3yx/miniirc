@@ -33,6 +33,15 @@ You don't need to add every argument, and the `ip`, `port`, `nick`, and
 irc = miniirc.IRC('irc.example.com', 6697, 'my-bot', ['#my-channel'], ns_identity=('my-bot', 'hunter2'), executor=concurrent.futures.ThreadPoolExecutor())
 ```
 
+If you are not doing anything with the main thread after connecting to IRC,
+please call `irc.wait_until_disconnected()` to prevent Python from trying to
+shut down while miniirc is still connected, breaking thread pools (in
+Python 3.9 and later).
+
+```py
+irc.wait_until_disconnected()
+```
+
 ### Parameter descriptions
 
 | Parameter     | Description                                                |
@@ -66,13 +75,14 @@ irc = miniirc.IRC('irc.example.com', 6697, 'my-bot', ['#my-channel'], ns_identit
 | `connect()`   | Connects to the IRC server if not already connected.      |
 | `ctcp(target, *msg, reply=False, tags=None)` | Sends a `CTCP` request or reply to `target`. |
 | `debug(...)`  | Debug, calls `print(...)` if debug mode is on.            |
-| `disconnect(msg=..., *, auto_reconnect=False)`| Disconnects from the IRC server. `auto_reconnect` will be overriden by `self.persist` if set to `True`. |
+| `disconnect(msg=..., *, auto_reconnect=False)`| Disconnects from the IRC server. `auto_reconnect` will be overridden by `self.persist` if set to `True`. |
 | `Handler(...)` | An event handler, see [Handlers](#handlers) for more info. |
 | `me(target, *msg, tags=None)`        | Sends a `/me` (`CTCP ACTION`) to `target`.  |
 | `msg(target, *msg, tags=None)`       | Sends a `PRIVMSG` to `target`. `target` should not contain spaces or start with a colon. |
 | `notice(target, *msg, tags=None)`    | Sends a `NOTICE` to `target`. `target` should not contain spaces or start with a colon. |
 | `quote(*msg, force=False, tags=None)` | Sends a raw message to IRC, use `force=True` to send while disconnected. Do not send multiple commands in one `irc.quote()`, as the newlines will be stripped and it will be sent as one command. The `tags` parameter optionally allows you to add a `dict` with IRCv3 client tags (all starting in `+`), and will not be sent to IRC servers that do not support client tags. |
 | `send(*msg, force=False, tags=None)` | Sends a command to the IRC server, treating every positional argument as a parameter. The usage of this is recommended over `irc.quote()` unless you know what you are doing. |
+| `wait_until_disconnected()` | Waits until the IRC server is disconnected and automatic reconnecting is turned off. |
 
 *Note that if `force=False` on `irc.quote` (or `irc.msg` etc is called) while
 miniirc is not connected, messages will be temporarily stored and then sent
@@ -230,7 +240,7 @@ def handler(irc, hostmask, args):
     irc.finish_negotiation(args[0]) # This can also be 'my-cap-name'.
 ```
 
-### Custom message parsers
+### Custom message parsers (not recommended)
 
 If the IRC server you are connecting to supports a non-standard message syntax, you can
 create custom message parsers. These are called with the raw message (as a `str`) and
@@ -286,8 +296,8 @@ handler will be called many times while connecting (and once connected).
 ```py
 import miniirc
 
-# Not required, however this makes sure miniirc isn't insanely outdated.
-assert miniirc.ver >= (1,4,3)
+# Not required, however this makes sure miniirc isn't outdated.
+assert miniirc.ver >= (1,7,2)
 
 @miniirc.Handler('PRIVMSG', 'NOTICE', colon=True)
 def handler(irc, hostmask, args):

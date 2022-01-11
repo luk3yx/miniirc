@@ -8,6 +8,20 @@ Notes:
  - This changelog may contain typographical errors, it is still a
     work-in-progress.
 
+## 1.8.0 - 2022-01-11
+
+### Added
+
+ - The `irc.wait_until_disconnected()` function has been added so that it's
+   possible to stop the main thread from exiting while miniirc is still
+   connected.
+
+### Changed
+
+ - Calling `Handler` or `CmdHandler` without colon=False will create a
+   deprecation warning (unless the handler only handles IRCv3 capabilities).
+ - The `irc.main()` function has a deprecation warning as well.
+
 ## 1.7.0 - 2021-09-26
 
 ### Added

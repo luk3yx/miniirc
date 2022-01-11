@@ -5,12 +5,12 @@
 # © 2018-2022 by luk3yx and other contributors of miniirc.
 #
 
-import atexit, errno, threading, time, socket, ssl, sys
+import atexit, errno, threading, time, socket, ssl, sys, warnings
 
 # The version string and tuple
-ver = __version_info__ = (1,7,0)
-version = 'miniirc IRC framework v1.7.0'
-__version__ = '1.7.0'
+ver = __version_info__ = (1,8,0)
+version = 'miniirc IRC framework v1.8.0'
+__version__ = '1.8.0'
 
 # __all__ and _default_caps
 __all__ = ['CmdHandler', 'Handler', 'IRC']
@@ -27,8 +27,15 @@ except ImportError:
 
 # Create global handlers
 _global_handlers = {}
+_colon_warning = False
 
 def _add_handler(handlers, events, ircv3, cmd_arg, colon):
+    if (colon and _colon_warning and
+            not all(str(e).upper().startswith('IRCV3 ') for e in events)):
+        warnings.warn('Using colon=True or not specifying the colon '
+                      'keyword argument to miniirc.Handler is deprecated.',
+                      DeprecationWarning, stacklevel=3)
+
     if not events:
         if not cmd_arg:
             raise TypeError('Handler() called without arguments.')
@@ -177,7 +184,7 @@ class IRC:
     debug_file = sys.stdout
     sendq = None
     msglen = 512
-    _main_lock = None
+    _main_thread = None
     _sasl = False
     _unhandled_caps = None
 
@@ -349,7 +356,14 @@ class IRC:
         atexit.register(self.disconnect)
         self.debug('Starting main loop...')
         self._sasl = self._pinged = False
-        self.main()
+        self._start_main_loop()
+
+    def _start_main_loop(self):
+        # Start the thread before updating _main_thread so that
+        # wait_until_disconnected() works correctly.
+        thread = threading.Thread(target=self._main)
+        thread.start()
+        self._main_thread = thread
 
     # Disconnect from IRC.
     def disconnect(self, msg=None, *, auto_reconnect=False):
@@ -458,7 +472,6 @@ class IRC:
                 while self.persist:
                     time.sleep(5)
                     self.debug('Reconnecting...')
-                    self._main_lock = None
                     try:
                         self.connect()
                     except (OSError, socket.error):
@@ -485,15 +498,19 @@ class IRC:
                         self.debug('Ignored message:', line)
             del raw
 
-    # Thread the main loop
+    def wait_until_disconnected(self, *, _timeout=None):
+        # The main thread may be replaced on reconnects
+        while self._main_thread and self._main_thread.is_alive():
+            self._main_thread.join(_timeout)
+
     def main(self):
-        if self._main_lock and self._main_lock.is_alive():
-            self.debug('Main loop already running!')
-            return self._main_lock
-        self.debug('Creating new thread...')
-        self._main_lock = threading.Thread(target=self._main)
-        self._main_lock.start()
-        return self._main_lock
+        warnings.warn('The miniirc.IRC.main() function is deprecated and '
+                      'should not be used.', DeprecationWarning, 2)
+        # The main thread may be started after the if check and before
+        # _start_main_loop. This function is deprecated so fixing this probably
+        # isn't worthwhile.
+        if not self._main_thread or not self._main_thread.is_alive():
+            self._start_main_loop()
 
 # Handle some IRC messages by default.
 @Handler('001')
@@ -633,10 +650,13 @@ def _handler(irc, hostmask, args):
         except (IndexError, ValueError):
             return
 
+        # Stop irc.wait_until_disconnected() from returning early
+        irc._main_thread = threading.current_thread()
+
         persist = irc.persist
         irc.disconnect()
-        irc.debug('NOTICE: An IRCv3 STS has been detected, the port will',
-            'be changed to', port, 'and TLS/SSL will be enabled.')
+        irc.debug('STS detected, enabling TLS/SSL and changing the port to ',
+                  port)
         irc.port = port
         irc.ssl = True
         time.sleep(1)
@@ -656,11 +676,9 @@ def _handler(irc, hostmask, args):
     irc.finish_negotiation(args[0])
 
 # Handle ISUPPORT messages
-@Handler('005', colon=True)
+@Handler('005')
 def _handler(irc, hostmask, args):
-    del args[0]
-    if args[-1].startswith(':'):
-        del args[-1]
+    del args[0], args[-1]
     isupport = _tags_to_dict(args, None)
 
     # Try and auto-detect integers
@@ -678,4 +696,5 @@ def _handler(irc, hostmask, args):
 
     irc.isupport.update(isupport)
 
+_colon_warning = True
 del _handler

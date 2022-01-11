@@ -1,5 +1,6 @@
 #!/bin/false
-import collections, functools, miniirc, queue, random, socket, threading, time
+import collections, functools, miniirc, pathlib, queue, random, re, socket, \
+       threading, time
 
 MINIIRC_V2 = miniirc.ver >= (2, 0, 0)
 if MINIIRC_V2:
@@ -53,7 +54,8 @@ else:
         assert hasattr(func, 'miniirc_cmd_arg') == cmdhandler
         assert hasattr(func, 'miniirc_ircv3') == ircv3
 
-def test_Handler():
+def test_Handler(monkeypatch):
+    monkeypatch.setattr(miniirc, '_colon_warning', False)
     try:
         tmp, miniirc._global_handlers = miniirc._global_handlers, {}
         @miniirc.Handler('test', 1, ircv3=True, colon=False)
@@ -85,6 +87,16 @@ def test_Handler():
             assert miniirc._global_handlers == expected
     finally:
         miniirc._global_handlers = tmp
+
+def test_version():
+    setup_py = pathlib.Path(__file__).resolve().parent / 'setup.py'
+    match = re.search(r"version *= '([0-9\.a-z]+)',", setup_py.read_text())
+    assert match
+    assert miniirc.__version__ == match.group(1)
+
+    assert ('.'.join(map(str, miniirc.ver[:3])) + ''.join(miniirc.ver[3:])
+            == miniirc.__version__)
+    assert miniirc.version == f'miniirc IRC framework v{miniirc.__version__}'
 
 def test_dict_to_tags():
     dict_to_tags = miniirc._dict_to_tags
@@ -158,12 +170,13 @@ class FakeExecutor:
         assert args == self.expected_args
         self.submissions += 1
 
-def test_executor():
+def test_executor(monkeypatch):
     executor = FakeExecutor()
     irc = DummyIRC(executor=executor)
     def fake_handler():
         pass
     executor.expected_args = (fake_handler, irc, ('a', 'b', 'c'), ['d'])
+    monkeypatch.setattr(miniirc, '_colon_warning', False)
     irc.Handler('test')(fake_handler)
     irc._handle('test', ('a', 'b', 'c'), {}, ['d'])
     assert executor.submissions == 1
@@ -184,7 +197,23 @@ def test_get_ca_certs():
     else:
         assert miniirc.get_ca_certs() == certifi.where()
 
-def test_connection():
+def test_start_main_loop(monkeypatch):
+    irc = DummyIRC()
+    thread = None
+
+    def main(self):
+        nonlocal thread
+        assert self is irc
+        thread = threading.current_thread()
+
+    monkeypatch.setattr(DummyIRC, '_main', main)
+
+    assert irc._main_thread is None
+    irc._start_main_loop()
+    assert irc._main_thread is thread
+    assert not hasattr(irc, '_main_lock')
+
+def test_connection(monkeypatch):
     irc = err = None
 
     # Prevent miniirc catching fakesocket errors
@@ -267,7 +296,7 @@ def test_connection():
         def settimeout(self, t):
             assert t == 60
 
-    socket.socket = fakesocket
+    monkeypatch.setattr(socket, 'socket', fakesocket)
 
     try:
         event = threading.Event()
@@ -297,7 +326,4 @@ def test_connection():
         else:
             assert irc.nick == irc.current_nick == 'miniirc-test_'
     finally:
-        socket.socket = fakesocket.__bases__[0]
-        if err is not None:
-            raise err
         irc.disconnect()
