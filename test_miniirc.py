@@ -90,7 +90,8 @@ def test_Handler(monkeypatch):
 
 def test_version():
     setup_py = pathlib.Path(__file__).resolve().parent / 'setup.py'
-    match = re.search(r"version *= '([0-9\.a-z]+)',", setup_py.read_text())
+    with setup_py.open() as f:
+        match = re.search(r"version *= '([0-9\.a-z]+)',", f.read())
     assert match
     assert miniirc.__version__ == match.group(1)
 
