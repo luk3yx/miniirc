@@ -96,7 +96,7 @@ def test_version():
 
     assert ('.'.join(map(str, miniirc.ver[:3])) + ''.join(miniirc.ver[3:])
             == miniirc.__version__)
-    assert miniirc.version == f'miniirc IRC framework v{miniirc.__version__}'
+    assert miniirc.version == 'miniirc IRC framework v' + miniirc.__version__
 
 def test_dict_to_tags():
     dict_to_tags = miniirc._dict_to_tags
