@@ -114,7 +114,7 @@ def test_dict_to_tags():
     tags_dict = collections.OrderedDict((
         ('abc', True), ('def', False), ('ghi', ''), ('jkl', 'test\r\n; ')
     ))
-    assert dict_to_tags(tags_dict) == rb'@abc;jkl=test\r\n\:\s '
+    assert dict_to_tags(tags_dict) == rb'@abc;ghi;jkl=test\r\n\:\s '
 
 def test_logfile():
     msgs = []
