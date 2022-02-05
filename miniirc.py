@@ -2,21 +2,21 @@
 #
 # miniirc - A small-ish IRC framework.
 #
-# © 2018-2022 by luk3yx and other contributors of miniirc.
+# © 2018-2021 by luk3yx and other contributors of miniirc.
 #
 
-import atexit, errno, threading, time, socket, ssl, sys, warnings
+import atexit, collections, errno, threading, time, types, re, socket, ssl, sys
 
 # The version string and tuple
-ver = __version_info__ = (1,8,1)
-version = 'miniirc IRC framework v1.8.1'
-__version__ = '1.8.1'
+ver = __version_info__ = (2,0,0,'a5')
+version = 'miniirc IRC framework v2.0.0a5'
+__version__ = '2.0.0a5'
 
 # __all__ and _default_caps
 __all__ = ['CmdHandler', 'Handler', 'IRC']
-_default_caps = {'account-tag', 'away-notify', 'cap-notify', 'chghost',
-    'draft/message-tags-0.2', 'invite-notify', 'message-tags',
-    'oragono.io/maxline-2', 'server-time', 'sts'}
+_default_caps = {'account-notify', 'account-tag', 'away-notify', 'cap-notify',
+                 'chghost', 'extended-join', 'invite-notify', 'message-tags',
+                 'oragono.io/maxline-2', 'server-time', 'sts'}
 
 # Get the certificate list.
 try:
@@ -27,117 +27,109 @@ except ImportError:
 
 # Create global handlers
 _global_handlers = {}
-_colon_warning = False
 
-def _add_handler(handlers, events, ircv3, cmd_arg, colon):
-    if (colon and _colon_warning and
-            not all(str(e).upper().startswith('IRCV3 ') for e in events)):
-        warnings.warn('Using colon=True or not specifying the colon '
-                      'keyword argument to miniirc.Handler is deprecated.',
-                      DeprecationWarning, stacklevel=3)
+class _Handler:
+    __slots__ = ('func', 'cmdhandler', 'ircv3', 'run_in_thread')
 
+    def __init__(self, func, *, cmdhandler, ircv3):
+        self.func = func
+        self.cmdhandler = cmdhandler
+        self.ircv3 = ircv3
+        self.run_in_thread = True
+
+def _add_handler(handlers, events, ircv3, cmdhandler, colon):
+    if colon:
+        raise TypeError('The usage of colon=True is no longer supported')
     if not events:
-        if not cmd_arg:
+        if not cmdhandler:
             raise TypeError('Handler() called without arguments.')
         events = (None,)
 
     def add_handler(func):
+        handler = _Handler(func, cmdhandler=cmdhandler, ircv3=ircv3)
         for event in events:
             if event is not None:
                 event = str(event).upper()
             if event not in handlers:
                 handlers[event] = []
             if func not in handlers[event]:
-                handlers[event].append(func)
+                handlers[event].append(handler)
 
-        f = getattr(func, '__func__', func)
-        if ircv3:   f.miniirc_ircv3     = True
-        if cmd_arg: f.miniirc_cmd_arg   = True
-        if colon:   f.miniirc_colon     = True
         return func
 
     return add_handler
 
-def Handler(*events, ircv3=False, colon=True):
+def Handler(*events, ircv3=False, colon=False):
     return _add_handler(_global_handlers, events, ircv3, False, colon)
 
-def CmdHandler(*events, ircv3=False, colon=True):
+def CmdHandler(*events, ircv3=False, colon=False):
     return _add_handler(_global_handlers, events, ircv3, True, colon)
 
 # Parse IRCv3 tags
-ircv3_tag_escapes = {':': ';', 's': ' ', 'r': '\r', 'n': '\n'}
-def _tags_to_dict(tag_list, separator=';'):
+_ircv3_tag_escapes = {':': ';', 's': ' ', 'r': '\r', 'n': '\n'}
+def _tag_list_to_dict(tag_list):
     tags = {}
-    if separator:
-        tag_list = tag_list.split(separator)
     for tag in tag_list:
         tag = tag.split('=', 1)
         if len(tag) == 1:
-            tags[tag[0]] = True
+            tags[tag[0]] = ''
         elif len(tag) == 2:
             if '\\' in tag[1]: # Iteration is bad, only do it if required.
                 value = ''
                 escape = False
                 for char in tag[1]: # TODO: Remove this iteration.
                     if escape:
-                        value += ircv3_tag_escapes.get(char, char)
+                        value += _ircv3_tag_escapes.get(char, char)
                         escape = False
                     elif char == '\\':
                         escape = True
                     else:
                         value += char
             else:
-                value = tag[1] or True
+                value = tag[1]
             tags[tag[0]] = value
 
     return tags
 
 # Create the IRCv2/3 parser
+IRCMessage = collections.namedtuple('IRCMessage', 'command hostmask tags args')
+_msg_re = re.compile(
+    r'^'
+    r'(?:@([^ ]+) )?'
+    r'(?::([^!@ ]*)(?:!([^@ ]*))?(?:@([^ ]*))? )?'
+    r'([^ ]+)(?: (.*?)(?: :(.*))?)?'
+    r'$'
+)
 def ircv3_message_parser(msg):
-    n = msg.split(' ')
+    match = _msg_re.match(msg)
+    if not match:
+        return
 
     # Process IRCv3 tags
-    if n[0].startswith('@'):
-        tags = _tags_to_dict(n.pop(0)[1:])
-    else:
-        tags = {}
+    raw_tags = match.group(1)
+    tags = _tag_list_to_dict(raw_tags.split(';')) if raw_tags else {}
 
     # Process arguments
-    if n[0].startswith(':'):
-        while len(n) < 2:
-            n.append('')
-        hostmask = n[0][1:].split('!', 1)
-        if len(hostmask) < 2:
-            hostmask.append(hostmask[0])
-        i = hostmask[1].split('@', 1)
-        if len(i) < 2:
-            i.append(i[0])
-        hostmask = (hostmask[0], i[0], i[1])
-        cmd = n[1]
-    else:
-        cmd = n[0]
-        hostmask = (cmd, cmd, cmd)
-        n.insert(0, '')
+    hostmask = (match.group(2) or '', match.group(3) or '',
+                match.group(4) or '')
+    cmd = match.group(5)
 
     # Get the command and arguments
-    args = []
-    c = 1
-    for i in n[2:]:
-        c += 1
-        if i.startswith(':'):
-            args.append(' '.join(n[c:]))
-            break
-        else:
-            args.append(i)
+    raw_args = match.group(6)
+    args = [] if raw_args is None else raw_args.split(' ')
+
+    trailing = match.group(7)
+    if trailing:
+        args.append(trailing)
 
     # Return the parsed data
-    return cmd, hostmask, tags, args
+    return IRCMessage(cmd.upper(), hostmask, tags, args)
 
 # Escape tags
 def _escape_tag(tag):
     tag = str(tag).replace('\\', '\\\\')
-    for i in ircv3_tag_escapes:
-        tag = tag.replace(ircv3_tag_escapes[i], '\\' + i)
+    for i in _ircv3_tag_escapes:
+        tag = tag.replace(_ircv3_tag_escapes[i], '\\' + i)
     return tag
 
 # Convert a dict into an IRCv3 tags string
@@ -182,14 +174,11 @@ def _prune_arg(arg):
 class IRC:
     connected = None
     debug_file = sys.stdout
-    sendq = None
+    _sendq = None
     msglen = 512
     _main_thread = None
     _sasl = False
     _unhandled_caps = None
-
-    # This will no longer be an alias in miniirc v2.0.0.
-    current_nick = property(lambda self : self.nick)
 
     def __init__(self, ip, port, nick, channels=None, *, ssl=None, ident=None,
                  realname=None, persist=True, debug=False, ns_identity=None,
@@ -199,7 +188,7 @@ class IRC:
         # Set basic variables
         self.ip = ip
         self.port = int(port)
-        self.nick = nick
+        self.nick = self.current_nick = nick
         if isinstance(channels, str):
             channels = map(str.lstrip, channels.split(','))
         self.channels = set(channels or ())
@@ -218,17 +207,21 @@ class IRC:
         self._executor = executor
 
         # Set the NickServ identity
-        if not ns_identity or isinstance(ns_identity, str):
-            self.ns_identity = ns_identity
+        if ns_identity:
+            if isinstance(ns_identity, str):
+                self.ns_identity = tuple(ns_identity.split(' ', 1))
+            else:
+                self.ns_identity = tuple(map(str, ns_identity))
+            assert len(self.ns_identity) == 2
         else:
-            self.ns_identity = ' '.join(ns_identity)
+            self.ns_identity = None
 
         # Set the debug file
         if not debug:
             self.debug_file = None
         elif hasattr(debug, 'write'):
             self.debug_file = debug
-        elif hasattr(debug, '__call__'):
+        elif callable(debug):
             self.debug_file = _Logfile(debug)
 
         # Add IRCv3 capabilities.
@@ -237,7 +230,7 @@ class IRC:
 
         # Add handlers and set the default message parser
         self.change_parser()
-        self.handlers = {}
+        self._handlers = {}
         self._send_lock = threading.Lock()
         if ssl is None and self.port == 6697:
             self.ssl = True
@@ -254,24 +247,15 @@ class IRC:
                 self.debug_file.flush()
 
     # Send raw messages
-    def quote(self, *msg, force=None, tags=None):
-        if not tags and msg and isinstance(msg[0], dict):
-            tags = msg[0]
-            msg = msg[1:]
+    def quote(self, *msg, force=False, tags=None):
         if not self.connected and not force:
             self.debug('>Q>', *msg)
-            if not self.sendq:
-                self.sendq = []
-            if tags:
-                msg = (tags,) + msg
-            self.sendq.append(msg)
+            if not self._sendq:
+                self._sendq = []
+            self._sendq.append((tags, msg))
             return
 
-        if (not isinstance(tags, dict)
-                or ('message-tags' not in self.active_caps and
-                    'draft/message-tags-0.2' not in self.active_caps)):
-            tags = None
-        self.debug('>3> ' + repr(tags) if tags else '>>>', *msg)
+        self.debug('>>>', *msg)
         msg = (' '.join(msg).encode('utf-8').replace(b'\r', b' ')
                .replace(b'\n', b' '))
 
@@ -280,24 +264,27 @@ class IRC:
             if msg[-1] >= 0x80:
                 msg = msg.decode('utf-8', 'ignore').encode('utf-8')
 
-        if tags:
+        if isinstance(tags, dict) and 'message-tags' in self.active_caps:
             msg = _dict_to_tags(tags) + msg
 
         self._send_lock.acquire()
         try: # Apparently try/finally is faster than "with".
             self.sock.sendall(msg + b'\r\n')
         except (AttributeError, BrokenPipeError):
-            if force:
-                raise
+            pass
         finally:
             self._send_lock.release()
 
-    def send(self, *msg, force=None, tags=None):
-        if len(msg) > 1:
-            self.quote(*tuple(map(_prune_arg, msg[:-1])) + (':' + msg[-1],),
-                force=force, tags=tags)
+    def send(self, command, *args, force=False, tags=None):
+        if args:
+            self.quote(
+                command,
+                *tuple(map(_prune_arg, args[:-1])) + (':' + args[-1],),
+                force=force,
+                tags=tags
+            )
         else:
-            self.quote(*msg, force=force, tags=tags)
+            self.quote(command, force=force, tags=tags)
 
     # User-friendly msg, notice, and CTCP functions.
     def msg(self, target, *msg, tags=None):
@@ -314,11 +301,11 @@ class IRC:
         return self.ctcp(target, 'ACTION', *msg, tags=tags)
 
     # Allow per-connection handlers
-    def Handler(self, *events, ircv3=False, colon=True):
-        return _add_handler(self.handlers, events, ircv3, False, colon)
+    def Handler(self, *events, ircv3=False, colon=False):
+        return _add_handler(self._handlers, events, ircv3, False, colon)
 
-    def CmdHandler(self, *events, ircv3=False, colon=True):
-        return _add_handler(self.handlers, events, ircv3, True, colon)
+    def CmdHandler(self, *events, ircv3=False, colon=False):
+        return _add_handler(self._handlers, events, ircv3, True, )
 
     # The connect function
     def connect(self):
@@ -347,8 +334,8 @@ class IRC:
         self.sock.connect(addrinfo[4])
         if self.ssl and self.verify_ssl:
             ssl.match_hostname(self.sock.getpeercert(), self.ip)
-        # Begin IRCv3 CAP negotiation.
         self._unhandled_caps = None
+        self.current_nick = self.nick
         self.quote('CAP LS 302', force=True)
         self.quote('USER', self.ident, '0', '*', ':' + self.realname,
             force=True)
@@ -399,47 +386,47 @@ class IRC:
         self._parse = parser
 
     # Start a handler function
-    def _start_handler(self, handlers, command, hostmask, tags, args):
-        r = False
+    def _start_handler(self, handlers, msg):
         for handler in handlers:
-            r = True
-            params = [self, hostmask, list(args)]
-            if not hasattr(handler, 'miniirc_colon') and args and \
-                    args[-1].startswith(':'):
-                params[2][-1] = args[-1][1:]
-            if hasattr(handler, 'miniirc_ircv3'):
-                params.insert(2, dict(tags))
-            if hasattr(handler, 'miniirc_cmd_arg'):
-                params.insert(1, command)
+            params = [self, msg.hostmask, list(msg.args)]
+            if handler.ircv3:
+                params.insert(2, types.MappingProxyType(msg.tags))
+            if handler.cmdhandler:
+                params.insert(1, msg.command)
 
-            if self._executor is None:
-                threading.Thread(target=handler, args=params).start()
+            if not handler.run_in_thread:
+                try:
+                    handler.func(*params)
+                except:
+                    import traceback
+                    traceback.print_exc()
+            elif self._executor is not None:
+                self._executor.submit(handler.func, *params)
             else:
-                self._executor.submit(handler, *params)
-        return r
+                threading.Thread(target=handler.func, args=params).start()
 
     # Launch handlers
-    def _handle(self, cmd, hostmask, tags, args):
-        r = False
-        cmd = str(cmd).upper()
-        hostmask = tuple(hostmask)
-        for handlers in (_global_handlers, self.handlers):
-            if cmd in handlers:
-                r = self._start_handler(handlers[cmd], cmd, hostmask, tags,
-                                        args)
+    def handle_msg(self, msg):
+        handled = False
+        for handlers in (_global_handlers, self._handlers):
+            if msg.command in handlers:
+                self._start_handler(handlers[msg.command], msg)
+                handled = True
 
             if None in handlers:
-                self._start_handler(handlers[None], cmd, hostmask, tags, args)
+                self._start_handler(handlers[None], msg)
 
-        return r
+        return handled
 
     # Launch IRCv3 handlers
     def _handle_cap(self, cap):
         cap = cap.lower()
         self.active_caps.add(cap)
         if self._unhandled_caps and cap in self._unhandled_caps:
-            handled = self._handle('IRCv3 ' + cap,
-                ('CAP', 'CAP', 'CAP'), {}, self._unhandled_caps[cap])
+            handled = self.handle_msg(IRCMessage(
+                ('IRCv3 ' + cap).upper(), ('', '', ''), {},
+                self._unhandled_caps[cap]
+            ))
             if not handled:
                 self.finish_negotiation(cap)
 
@@ -485,32 +472,25 @@ class IRC:
             buffer = raw.pop()
             for line in raw:
                 line = line.decode('utf-8', 'replace')
+                if not line:
+                    continue
 
-                if line:
-                    self.debug('<<<', line)
-                    try:
-                        result = self._parse(line)
-                    except:
-                        result = None
-                    if isinstance(result, tuple) and len(result) == 4:
-                        self._handle(*result)
+                self.debug('<<<', line)
+                try:
+                    msg = self._parse(line)
+                    if isinstance(msg, IRCMessage):
+                        self.handle_msg(msg)
                     else:
-                        self.debug('Ignored message:', line)
+                        self.debug('Ignored message:', parsed_line)
+                except:
+                    import traceback
+                    traceback.print_exc()
             del raw
 
     def wait_until_disconnected(self, *, _timeout=None):
         # The main thread may be replaced on reconnects
         while self._main_thread and self._main_thread.is_alive():
             self._main_thread.join(_timeout)
-
-    def main(self):
-        warnings.warn('The miniirc.IRC.main() function is deprecated and '
-                      'should not be used.', DeprecationWarning, 2)
-        # The main thread may be started after the if check and before
-        # _start_main_loop. This function is deprecated so fixing this probably
-        # isn't worthwhile.
-        if not self._main_thread or not self._main_thread.is_alive():
-            self._start_main_loop()
 
 # Handle some IRC messages by default.
 @Handler('001')
@@ -525,22 +505,22 @@ def _handler(irc, hostmask, args):
         irc.quote('MODE', irc.nick, irc.connect_modes)
     if not irc._sasl and irc.ns_identity:
         irc.debug('Logging in (no SASL, aww)...')
-        irc.msg('NickServ', 'identify ' + irc.ns_identity)
+        irc.msg('NickServ', 'identify', *irc.ns_identity)
     if irc.channels:
         irc.debug('*** Joining channels...', irc.channels)
         irc.quote('JOIN', ','.join(irc.channels))
 
     with irc._send_lock:
-        sendq, irc.sendq = irc.sendq, None
+        sendq, irc._sendq = irc._sendq, None
     if sendq:
-        for i in sendq:
-            irc.quote(*i)
+        for tags, args in sendq:
+            irc.quote(*args, tags=tags)
 
-@Handler('PING', colon=True)
+@Handler('PING')
 def _handler(irc, hostmask, args):
-    irc.quote('PONG', *args, force=True)
+    irc.send('PONG', *args, force=True)
 
-@Handler('PONG', colon=False)
+@Handler('PONG')
 def _handler(irc, hostmask, args):
     if args and args[-1] == 'miniirc-ping' and irc.ping_interval:
         irc._pinged = False
@@ -552,21 +532,22 @@ def _handler(irc, hostmask, args):
     if not irc.connected:
         try:
             return int(irc.nick[0])
-        except:
+        except (IndexError, ValueError):
             pass
-        if len(irc.nick) >= irc.isupport.get('NICKLEN', 20):
+        if len(irc.current_nick) >= irc.isupport.get('NICKLEN', 20):
             return
-        irc.debug('WARNING: The requested nickname', repr(irc.nick), 'is '
-            'invalid. Trying again with', repr(irc.nick + '_') + '...')
-        irc.nick += '_'
-        irc.quote('NICK', irc.nick, force=True)
+        irc.debug('WARNING: The requested nickname', repr(irc.current_nick),
+            'is invalid. Trying again with', repr(irc.current_nick + '_') +
+            '...')
+        irc.current_nick += '_'
+        irc.quote('NICK', irc.current_nick, force=True)
 
-@Handler('NICK', colon=False)
+@Handler('NICK')
 def _handler(irc, hostmask, args):
-    if hostmask[0].lower() == irc.nick.lower():
-        irc.nick = args[-1]
+    if hostmask[0].lower() == irc.current_nick.lower():
+        irc.current_nick = args[-1]
 
-@Handler('PRIVMSG', colon=False)
+@Handler('PRIVMSG')
 def _handler(irc, hostmask, args):
     if not version:
         return
@@ -574,7 +555,7 @@ def _handler(irc, hostmask, args):
         irc.ctcp(hostmask[0], 'VERSION', version, reply=True)
 
 # Handle IRCv3 capabilities
-@Handler('CAP', colon=False)
+@Handler('CAP')
 def _handler(irc, hostmask, args):
     if len(args) < 3:
         return
@@ -623,13 +604,12 @@ def _handler(irc, hostmask, args):
         irc.quote('AUTHENTICATE *', force=True)
         irc.finish_negotiation('sasl')
 
-@Handler('AUTHENTICATE', colon=False)
+@Handler('AUTHENTICATE')
 def _handler(irc, hostmask, args):
     if args and args[0] == '+':
         from base64 import b64encode
         irc._sasl = True
-        pw = irc.ns_identity.split(' ', 1)
-        pw = '{0}\x00{0}\x00{1}'.format(*pw).encode('utf-8')
+        pw = '{0}\x00{0}\x00{1}'.format(*irc.ns_identity).encode('utf-8')
         irc.quote('AUTHENTICATE', b64encode(pw).decode('utf-8'), force=True)
 
 @Handler('904', '905')
@@ -647,7 +627,7 @@ def _handler(irc, hostmask, args):
 def _handler(irc, hostmask, args):
     if not irc.ssl and len(args) == 2:
         try:
-            port = int(_tags_to_dict(args[1], ',')['port'])
+            port = int(_tags_to_dict(args[1].split(','))['port'])
         except (IndexError, ValueError):
             return
 
@@ -679,8 +659,7 @@ def _handler(irc, hostmask, args):
 # Handle ISUPPORT messages
 @Handler('005')
 def _handler(irc, hostmask, args):
-    del args[0], args[-1]
-    isupport = _tags_to_dict(args, None)
+    isupport = _tag_list_to_dict(args[1:-1])
 
     # Try and auto-detect integers
     remove = set()
@@ -688,8 +667,8 @@ def _handler(irc, hostmask, args):
         try:
             isupport[key] = int(isupport[key])
             if key == 'NICKLEN':
-                irc.nick = irc.nick[:isupport[key]]
-        except:
+                irc.current_nick = irc.current_nick[:isupport[key]]
+        except ValueError:
             if key.endswith('LEN'):
                 remove.add(key)
     for key in remove:
@@ -697,5 +676,4 @@ def _handler(irc, hostmask, args):
 
     irc.isupport.update(isupport)
 
-_colon_warning = True
 del _handler

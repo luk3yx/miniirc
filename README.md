@@ -1,5 +1,10 @@
 # miniirc
 
+# Warning
+
+This branch contains a miniirc v2.0.0 pre-release, the documentation is probably
+out-of-date and breaking changes can and will happen without notice.
+
 [![Python 3.4+]](#python-version-support) [![Available on PyPI.]](https://pypi.org/project/miniirc/) [![License: MIT]](https://github.com/luk3yx/miniirc/blob/master/LICENSE.md)
 
 A relatively simple thread-safe(-ish) IRC client framework.
@@ -133,16 +138,16 @@ The following arguments passed to `miniirc.IRC` are also available: `ip`,
 ## Handlers
 
 `miniirc.Handler` and `miniirc.CmdHandler` are function decorators that add
-functions to an event handler list. Functions in this list are called in their
-own thread when their respective IRC event(s) is/are received. Handlers may
-work on every IRC object in existence (`miniirc.Handler`) or only on
-specific IRC objects (`irc.Handler`).
+functions to an event handler list. Functions in this list are called when
+their respective IRC event(s) are received. Handlers may work on every IRC
+object in existence (`miniirc.Handler`) or only on specific IRC objects
+(`irc.Handler`).
 
 The basic syntax for a handler is as followed, where `*events` is a list of events (`PRIVMSG`, `NOTICE`, etc) are called.
 
 ```py
 import miniirc
-@miniirc.Handler(*events, colon=False)
+@miniirc.Handler(*events)
 def handler(irc, hostmask, args):
     # irc:      An 'IRC' object.
     # hostmask: A 'hostmask' object.
@@ -155,16 +160,15 @@ def handler(irc, hostmask, args):
     pass
 ```
 
+By default, handlers are run in their own thread. To use the connection thread,
+add the `thread=False` keyword argument to `Handler`.
+
 #### Recommendations when using handlers:
 
- - If you don't need support for miniirc <1.4.0 and are parsing the last
-    parameter, setting `colon` to `False` is strongly recommended. If the
-    `colon` parameter is omitted, it defaults to `True`, however this will
-    change when miniirc v2.0.0 is released.
+ - Avoid setting the colon parameter to `True`.
  - Although `Handler` and `CmdHandler` currently accept any object that can be
     converted to a string, every event is converted to a string internally.
- - Not specifying the [`ircv3`](#ircv3-tags) parameter when it is not required
-    prevents a redundant `dict` from being created.
+ - Not specifying the [`ircv3`](#ircv3-tags) parameter when it is not required.
  - To add handlers to a specific `IRC` object and not every one in existence,
     use `irc.Handler` and `irc.CmdHandler` instead. If you want to create a
     `Bot` or `Client` class and automatically add handlers to `IRC` objects
@@ -212,7 +216,7 @@ handlers as `dict`s, with values of either strings or `True`.
 
 ```py
 import miniirc
-@miniirc.Handler(*events, colon=False, ircv3=True)
+@miniirc.Handler(*events, ircv3=True)
 def handler(irc, hostmask, tags, args):
     pass
 ```
@@ -221,8 +225,7 @@ def handler(irc, hostmask, tags, args):
 
 You can handle IRCv3 capabilities before connecting using a handler.
 You must use `force=True` on any `irc.quote()` called here, as when this is
-called, miniirc may not yet be fully connected. Do not use the `colon` argument
-for `Handler` when creating these handlers to avoid unexpected side-effects.
+called, miniirc may not yet be fully connected.
 
 ```py
 import miniirc
@@ -242,11 +245,10 @@ def handler(irc, hostmask, args):
 
 ### Custom message parsers (not recommended)
 
-If the IRC server you are connecting to supports a non-standard message syntax, you can
-create custom message parsers. These are called with the raw message (as a `str`) and
-can either return `None` to ignore the message or a 4-tuple (`cmd, hostmask, tags, args`)
-that will then be sent on to the handlers. The items in this 4-tuple should be the same
-type as the items expected by handlers (and `cmd` should be a string).
+If the IRC server you are connecting to supports a non-standard message syntax,
+you can create custom message parsers. These are called with the raw message
+(as a string) and can either return `None` to ignore the message or an instance
+of `IRCMessage`.
 
 #### Message parser example
 
@@ -255,9 +257,12 @@ This message parser makes the normal parser allow `~` as an IRCv3 tag prefix cha
 ```py
 import miniirc
 
-def my_message_parser(msg):
+def my_message_parser(raw_msg):
     if msg.startswith('~'):
         msg = '@' + msg[1:]
+    elif msg == 'test':
+        return miniirc.IRCMessage('PRIVMSG', ('nick', 'user', 'host'), {},
+                                  ['#channel', 'This is a testing message!'])
     return miniirc.ircv3_message_parser(msg)
 ```
 
@@ -297,14 +302,14 @@ handler will be called many times while connecting (and once connected).
 import miniirc
 
 # Not required, however this makes sure miniirc isn't outdated.
-assert miniirc.ver >= (1,7,2)
+assert miniirc.ver >= (2,0,0)
 
-@miniirc.Handler('PRIVMSG', 'NOTICE', colon=True)
+@miniirc.Handler('PRIVMSG', 'NOTICE')
 def handler(irc, hostmask, args):
     print(hostmask[0], 'sent a message to', args[0], 'with content', args[1])
-    # nickname sent a message to #channel with content :Hello, world!
+    # nickname sent a message to #channel with content Hello, world!
 
-@miniirc.CmdHandler('PRIVMSG', 'NOTICE', colon=False)
+@miniirc.CmdHandler('PRIVMSG', 'NOTICE')
 def cmdhandler(irc, command, hostmask, args):
     print(hostmask[0], 'sent a', command, 'to', args[0], 'with content',
         args[1])
@@ -356,33 +361,8 @@ is still in beta and there will be breaking API changes in the future.
 
 ## Deprecations
 
-When miniirc v2.0.0 is released, the following breaking changes will (probably)
-be made:
-
- - Internal-only attributes `irc.handlers`, `irc.sock`, and `irc.sendq`
-    (please do not use these) will be renamed. Again, please do not use these.
- - `irc.nick` will be the nickname used when connecting to IRC rather than the
-    current nickname, use `irc.current_nick` for the current nickname (since
-    v1.4.3). This will stop lots of underscores being automatically appended to
-    nicknames.
- - `irc.ns_identity` will be stored as a tuple instead of a string, for example
-    `('username', 'password with spaces')` instead of
-    `'username password with spaces'`. Both formats are currently accepted and
-    will be accepted in the `ns_identity` keyword argument.
- - No exceptions will be raised in `irc.quote`/`irc.send` with `force=True`
-    when the socket is closed. Instead of relying on these exceptions, use
-    `irc.connected` which is set to `None` when completely disconnected.
- - As stated in the Python version support section, Python 3.4 support will be
-    dropped in miniirc v2.1.0, however bugfixes will be backported for a few
-    months.
- - The `colon` keyword argument to `Handler` and `CmdHandler` will default to
-    `False` instead of `True`.
- - Unspecified hostmasks will be an empty string instead of the command. Don't
-    rely on this "feature" if possible, simply ignore the hostmask if you do
-    not need it.
- - The `extended-join` capability will be requested by default, use `args[0]`
-    instead of `args[-1]` to get the channel from a `JOIN` event.
- - The `tags` keyword argument will be read-only.
+ - The `colon` keyword argument to `Handler` is deprecated and should be
+   avoided unless you need compatibility with miniirc 1.
 
 ## Working examples/implementations
 

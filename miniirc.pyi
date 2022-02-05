@@ -3,8 +3,8 @@
 #   file slower to load.
 
 import atexit, concurrent.futures, errno, io, threading, time, socket, ssl, sys
-from typing import (Any, Callable, Dict, Iterable, List, Optional, Set, Tuple,
-                    Union, overload)
+from typing import (Any, Callable, Dict, Iterable, List, Mapping, Optional,
+                    Set, Tuple, Union, overload)
 
 if sys.version_info >= (3, 8):
     from typing import Literal
@@ -28,34 +28,28 @@ try:
 except ImportError:
     get_ca_certs = lambda : None
 
-# Create global handlers
-_global_handlers: Dict[str, Callable] = {}
-
-def _add_handler(handlers, events, ircv3, cmd_arg, colon) \
-    -> Callable[[Callable], Callable]: ...
-
 _handler_func_1 = Callable[['IRC', Tuple[str, str, str], List[str]], Any]
 _handler_func_2 = Callable[['IRC', Tuple[str, str, str],
-                            Dict[str, Union[str, bool]], List[str]], Any]
+                            Mapping[str, Union[str, bool]], List[str]], Any]
 @overload
-def Handler(*events: str, colon: bool, ircv3: Literal[False] = False) \
+def Handler(*events: str, colon: bool = False, ircv3: Literal[False] = False) \
     -> Callable[[_handler_func_1], _handler_func_1]: ...
 @overload
-def Handler(*events: str, colon: bool, ircv3: Literal[True]) \
+def Handler(*events: str, colon: bool = False, ircv3: Literal[True]) \
     -> Callable[[_handler_func_2], _handler_func_2]: ...
 
 _handler_func_3 = Callable[['IRC', str, Tuple[str, str, str], List[str]], Any]
 _handler_func_4 = Callable[['IRC', str, Tuple[str, str, str],
-                            Dict[str, Union[str, bool]], List[str]], Any]
+                            Mapping[str, Union[str, bool]], List[str]], Any]
 @overload
-def CmdHandler(*events: str, colon: bool, ircv3: Literal[False] = False) \
-    -> Callable[[_handler_func_3], _handler_func_3]: ...
+def CmdHandler(*events: str, colon: bool = False,
+    ircv3: Literal[False] = False) -> Callable[[_handler_func_3], _handler_func_3]: ...
 @overload
-def CmdHandler(*events: str, colon: bool, ircv3: Literal[True]) \
+def CmdHandler(*events: str, colon: bool = False, ircv3: Literal[True]) \
     -> Callable[[_handler_func_4], _handler_func_4]: ...
 
 # Parse IRCv3 tags
-ircv3_tag_escapes: Dict[str, str] = {':': ';', 's': ' ', 'r': '\r', 'n': '\n'}
+_ircv3_tag_escapes: Dict[str, str] = {':': ';', 's': ' ', 'r': '\r', 'n': '\n'}
 def _tags_to_dict(tag_list: Union[str, List[str]],
         separator: Optional[str] = ';') -> Dict[str, Union[str, bool]]: ...
 
@@ -67,7 +61,7 @@ def ircv3_message_parser(msg: str) -> Tuple[str, Tuple[str, str, str],
 def _escape_tag(tag: str) -> str: ...
 
 # Convert a dict into an IRCv3 tags string
-def _dict_to_tags(tags: Dict[str, Union[str, bool]]) -> bytes: ...
+def _dict_to_tags(tags: Mapping[str, Union[str, bool]]) -> bytes: ...
 
 # A wrapper for callable logfiles
 class _Logfile:
@@ -81,17 +75,11 @@ class IRC:
     connected: Optional[bool] = None
     debug_file: Optional[Union[io.TextIOWrapper, _Logfile]] = ...
     msglen: int = 512
-    _main_lock: Optional[threading.Thread] = None
-    _sasl: bool = False
-    _unhandled_caps: Optional[set] = None
-
-    @property
-    def current_nick(self) -> str:
-        ...
 
     ip: str
     port: int
     nick: str
+    current_nick: str
     channels: Set[str]
     ident: str
     realname: str
@@ -112,37 +100,39 @@ class IRC:
 
     # Send raw messages
     def quote(self, *msg: str, force: Optional[bool] = None,
-        tags: Optional[Dict[str, Union[str, bool]]] = None) -> None: ...
+        tags: Optional[Mapping[str, Union[str, bool]]] = None) -> None: ...
 
     def send(self, *msg: str, force: Optional[bool] = None,
-        tags: Optional[Dict[str, Union[str, bool]]] = None) -> None: ...
+        tags: Optional[Mapping[str, Union[str, bool]]] = None) -> None: ...
 
     # User-friendly msg, notice, and ctcp functions.
     def msg(self, target: str, *msg: str,
-        tags: Optional[Dict[str, Union[str, bool]]] = None) -> None: ...
+        tags: Optional[Mapping[str, Union[str, bool]]] = None) -> None: ...
 
     def notice(self, target: str, *msg: str,
-        tags: Optional[Dict[str, Union[str, bool]]] = None) -> None: ...
+        tags: Optional[Mapping[str, Union[str, bool]]] = None) -> None: ...
 
     def ctcp(self, target: str, *msg: str, reply: bool = False,
-        tags: Optional[Dict[str, Union[str, bool]]] = None) -> None: ...
+        tags: Optional[Mapping[str, Union[str, bool]]] = None) -> None: ...
 
     def me(self, target: str, *msg: str,
-        tags: Optional[Dict[str, Union[str, bool]]] = None) -> None: ...
+        tags: Optional[Mapping[str, Union[str, bool]]] = None) -> None: ...
 
     # Allow per-connection handlers
     @overload
-    def Handler(*events: str, colon: bool, ircv3: Literal[False] = False) \
+    def Handler(*events: str, colon: bool = False,
+        ircv3: Literal[False] = False) \
         -> Callable[[_handler_func_1], _handler_func_1]: ...
     @overload
-    def Handler(*events: str, colon: bool, ircv3: Literal[True]) \
+    def Handler(*events: str, colon: bool = False, ircv3: Literal[True]) \
         -> Callable[[_handler_func_2], _handler_func_2]: ...
 
     @overload
-    def CmdHandler(*events: str, colon: bool, ircv3: Literal[False] = False) \
+    def CmdHandler(*events: str, colon: bool = False,
+        ircv3: Literal[False] = False) \
         -> Callable[[_handler_func_3], _handler_func_3]: ...
     @overload
-    def CmdHandler(*events: str, colon: bool, ircv3: Literal[True]) \
+    def CmdHandler(*events: str, colon: bool = False, ircv3: Literal[True]) \
         -> Callable[[_handler_func_4], _handler_func_4]: ...
 
     # The connect function
@@ -159,25 +149,6 @@ class IRC:
     def change_parser(self, parser: Callable[[str],
         Tuple[str, Tuple[str, str, str], Dict[str, Union[str, bool]],
         List[str]]] = ircv3_message_parser) -> None: ...
-
-    # Start a handler function
-    def _start_handler(self, handlers: List[Callable], command: str,
-        hostmask: Tuple[str, str, str], tags: Dict[str, Union[str, bool]],
-        args: List[str]) \
-        -> None: ...
-
-    # Launch handlers
-    def _handle(self, cmd: str, hostmask: Tuple[str, str, str],
-        tags: Dict[str, Union[str, bool]], args: List[str]) -> bool: ...
-
-    # Launch IRCv3 handlers
-    def _handle_cap(self, cap: str) -> None: ...
-
-    # The main loop
-    def _main(self) -> None: ...
-
-    # Thread the main loop
-    def main(self) -> threading.Thread: ...
 
     # Initialize the class
     def __init__(self, ip: str, port: int, nick: str,
