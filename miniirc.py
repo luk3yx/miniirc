@@ -135,11 +135,11 @@ def _escape_tag(tag):
 # Convert a dict into an IRCv3 tags string
 def _dict_to_tags(tags):
     res = b'@'
-    for tag in tags:
-        if tags[tag]:
+    for tag, value in tags.items():
+        if value or value == '':
             etag = _escape_tag(tag).replace('=', '-')
-            if isinstance(tags[tag], str):
-                etag += '=' + _escape_tag(tags[tag])
+            if isinstance(value, str) and value:
+                etag += '=' + _escape_tag(value)
             etag = (etag + ';').encode('utf-8')
             if len(res) + len(etag) > 4094:
                 break
