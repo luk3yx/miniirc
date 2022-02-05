@@ -95,9 +95,9 @@ def _tag_list_to_dict(tag_list):
 IRCMessage = collections.namedtuple('IRCMessage', 'command hostmask tags args')
 _msg_re = re.compile(
     r'^'
-    r'(?:@([^ ]+) )?'
-    r'(?::([^!@ ]*)(?:!([^@ ]*))?(?:@([^ ]*))? )?'
-    r'([^ ]+)(?: (.*?)(?: :(.*))?)?'
+    r'(?:@([^ ]*) )?'                               # Tags
+    r'(?::([^!@ ]*)(?:!([^@ ]*))?(?:@([^ ]*))? )?'  # Hostmask
+    r'([^ ]+)(?: (.*?)(?: :(.*))?)?'                # Command and arguments
     r'$'
 )
 def ircv3_message_parser(msg):
@@ -107,7 +107,7 @@ def ircv3_message_parser(msg):
 
     # Process IRCv3 tags
     raw_tags = match.group(1)
-    tags = _tag_list_to_dict(raw_tags.split(';')) if raw_tags else {}
+    tags = {} if raw_tags is None else _tag_list_to_dict(raw_tags.split(';'))
 
     # Process arguments
     hostmask = (match.group(2) or '', match.group(3) or '',
