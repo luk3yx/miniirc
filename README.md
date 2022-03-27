@@ -357,7 +357,8 @@ The [miniirc_matrix](https://pypi.org/project/miniirc-matrix) and
 [miniirc_discord](https://pypi.org/project/miniirc-discord) libraries allow
 your existing bot to connect to Matrix and Discord with minimal code changes.
 Note that these libraries only support a subset of what IRC does and are
-limited. See the "supported commands" section of their documentation for more information.
+limited. See the "supported commands" section of their documentation for more
+information.
 
 ## miniirc_extras
 
@@ -416,7 +417,7 @@ handler definition.
 def handle_privmsg(irc, hostmask, args):
     # args in miniirc v1: ['#channel', 'Message']
     # args in miniirc v2: ['#channel', 'Message']
-    message = args[-1][1:]
+    message = args[-1]
 
     # In miniirc v1: message == 'Message'
     # In miniirc v2: message == 'Message'
