@@ -97,7 +97,7 @@ _msg_re = re.compile(
     r'^'
     r'(?:@([^ ]*) )?'                               # Tags
     r'(?::([^!@ ]*)(?:!([^@ ]*))?(?:@([^ ]*))? )?'  # Hostmask
-    r'([^ ]+)(?: (.*?)(?: :(.*))?)?'                # Command and arguments
+    r'([^@: ][^ ]*)(?: (.*?)(?: :(.*))?)?'          # Command and arguments
     r'$'
 )
 def ircv3_message_parser(msg):
