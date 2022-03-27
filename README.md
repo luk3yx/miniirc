@@ -245,6 +245,8 @@ def handler(irc, hostmask, args):
 
 ### Custom message parsers (not recommended)
 
+<details><summary>Documentation on custom message parsers</summary>
+
 If the IRC server you are connecting to supports a non-standard message syntax,
 you can create custom message parsers. These are called with the raw message
 (as a string) and can either return `None` to ignore the message or an instance
@@ -278,6 +280,8 @@ irc = miniirc.IRC(..., auto_connect=False)
 irc.change_parser(my_message_parser)
 irc.connect()
 ```
+
+</details>
 
 ### Handling multiple events
 
