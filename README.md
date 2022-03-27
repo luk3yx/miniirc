@@ -395,6 +395,7 @@ While the following code would work as expected in miniirc v1, in miniirc v2 it
 would ignore the first character of chat messages.
 
 ```py
+# Warning: This code does not work properly in miniirc v2!
 @irc.Handler('PRIVMSG')
 def handle_privmsg(irc, hostmask, args):
     # args in miniirc v1: ['#channel', ':Message']
