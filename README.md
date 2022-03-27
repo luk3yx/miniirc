@@ -351,6 +351,14 @@ request on [GitHub](https://github.com/luk3yx/miniirc/issues) or
 recommend updating. Later versions of Python include features such as f-strings
 that make software development easier.*
 
+## miniirc_matrix and miniirc_discord
+
+The [miniirc_matrix](https://pypi.org/project/miniirc-matrix) and
+[miniirc_discord](https://pypi.org/project/miniirc-discord) libraries allow
+your existing bot to connect to Matrix and Discord with minimal code changes.
+Note that these libraries only support a subset of what IRC does and are
+limited. See the "supported commands" section of their documentation for more information.
+
 ## miniirc_extras
 
 If you want more advanced(-ish) features such as user tracking, you can use
@@ -363,6 +371,88 @@ is still in beta and there will be breaking API changes in the future.
 
  - The `colon` keyword argument to `Handler` is deprecated and should be
    avoided unless you need compatibility with miniirc 1.
+ - As stated in the Python version support section, Python 3.4 support will be
+   dropped in miniirc v2.1.0, however bugfixes will be backported for a few
+   months.
+
+## Migrating to miniirc 2
+
+miniirc 2 was released on (TODO). Major breaking changes are listed below, with
+ones more likely to break code listed first.
+
+### The colon keyword argument
+
+The `colon` keyword argument to `Handler` and `CmdHandler` now defaults to
+`False` instead of `True`.
+
+This means that the last argument passed to handlers (`args[-1]`) will no
+longer start with a colon if it previously did.
+
+#### Example
+
+While the following code would work as expected in miniirc v1, in miniirc v2 it
+would ignore the first character of chat messages.
+
+```py
+@irc.Handler('PRIVMSG')
+def handle_privmsg(irc, hostmask, args):
+    # args in miniirc v1: ['#channel', ':Message']
+    # args in miniirc v2: ['#channel', 'Message']
+    message = args[-1][1:]
+
+    # In miniirc v1: message == 'Message'
+    # In miniirc v2: message == 'essage'
+
+    if message.lower().startswith('.help'):
+        irc.notice(args[0], 'I am a testing bot.')
+```
+
+To fix this, remove the code that ignores (`[1:]`) as shown below. If you want
+your code to continue to work on miniirc v1, you can add `colon=False` to the
+handler definition.
+
+```py
+@irc.Handler('PRIVMSG', colon=False)
+def handle_privmsg(irc, hostmask, args):
+    # args in miniirc v1: ['#channel', 'Message']
+    # args in miniirc v2: ['#channel', 'Message']
+    message = args[-1][1:]
+
+    # In miniirc v1: message == 'Message'
+    # In miniirc v2: message == 'Message'
+
+    if message.lower().startswith('.help'):
+        irc.notice(args[0], 'I am a testing bot.')
+```
+
+### irc.current_nick
+
+The `irc.nick` value is now the nickname used when connecting to IRC rather
+than the current nickname the bot/client has. Use `irc.current_nick` for the
+current nickname. This was done to fix a bug where miniirc would continue to
+append `_` to nicknames if they were unavailable.
+
+### `extended-join` capability
+
+The `extended-join` capability is now requested by default. In `JOIN` handlers,
+`args[0]` should be used instead of `args[-1]` to get the channel as
+`extended-join` adds extra arguments to `JOIN` messages.
+
+### Minor breaking changes that likely won't impact most people
+
+- Unspecified hostmasks will be an empty string instead of the command. Don't
+  rely on this "feature" if possible, simply ignore the hostmask if you do
+  not need it.
+- `irc.ns_identity` will be stored as a tuple instead of a string, for example
+   `('username', 'password with spaces')` instead of
+   `'username password with spaces'`. Both formats are still accepted in the
+   `ns_identity` keyword argument.
+- No exceptions will be raised in `irc.quote`/`irc.send` with `force=True`
+  when the socket is closed. Instead of relying on these exceptions, use
+  `irc.connected` which is set to `None` when completely disconnected.
+- The `tags` argument passed to handlers is now read-only.
+- Internal-only attributes `irc.handlers`, `irc.sock`, and `irc.sendq`
+  (please do not use these) have been renamed.
 
 ## Working examples/implementations
 
@@ -372,7 +462,7 @@ Here is a list of some (open-source) bots using miniirc, in alphabetical order:
     channels. *Python 3.8+*
  - [irc-url-title-bot] - Gets webpage titles from URLs posted in IRC channels.
     *Python 3.8+*
- - [lurklite] - A generic configurable IRC bot.
+ - [lurklite] - A generic configurable IRC, Matrix, and Discord bot.
     *[GitHub](https://github.com/luk3yx/lurklite) link.*
  - [stdinbot] - A very simple bot that dumps stdin to an IRC channel.
     *[GitHub](https://github.com/luk3yx/stdinbot) link.*
