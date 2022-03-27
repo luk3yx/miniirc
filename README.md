@@ -225,7 +225,7 @@ def handler(irc, hostmask, tags, args):
 
 You can handle IRCv3 capabilities before connecting using a handler.
 You must use `force=True` on any `irc.quote()` called here, as when this is
-called, miniirc may not yet be fully connected.
+called, miniirc may not be fully connected yet.
 
 ```py
 import miniirc
