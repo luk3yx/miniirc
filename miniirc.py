@@ -8,9 +8,9 @@
 import atexit, errno, threading, time, socket, ssl, sys, warnings
 
 # The version string and tuple
-ver = __version_info__ = (1,8,0)
-version = 'miniirc IRC framework v1.8.0'
-__version__ = '1.8.0'
+ver = __version_info__ = (1,8,1)
+version = 'miniirc IRC framework v1.8.1'
+__version__ = '1.8.1'
 
 # __all__ and _default_caps
 __all__ = ['CmdHandler', 'Handler', 'IRC']
@@ -634,8 +634,9 @@ def _handler(irc, hostmask, args):
 
 @Handler('904', '905')
 def _handler(irc, hostmask, args):
-    irc._sasl = False
-    irc.quote('AUTHENTICATE *', force=True)
+    if irc._sasl:
+        irc._sasl = False
+        irc.quote('AUTHENTICATE *', force=True)
 
 @Handler('902', '903', '904', '905')
 def _handler(irc, hostmask, args):

@@ -8,6 +8,15 @@ Notes:
  - This changelog may contain typographical errors, it is still a
     work-in-progress.
 
+## 1.8.1 - 2022-04-08
+
+### Changed
+
+ - Don't try and abort SASL authentication when receiving 904 numerics if it
+   has already been aborted. This prevents miniirc from constantly trying to
+   cancel authentication on InspIRCd 3 servers if the supplied credentials are
+   incorrect.
+
 ## 1.8.0 - 2022-01-11
 
 ### Added
