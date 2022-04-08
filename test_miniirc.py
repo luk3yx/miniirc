@@ -201,17 +201,21 @@ def test_get_ca_certs():
 def test_start_main_loop(monkeypatch):
     irc = DummyIRC()
     thread = None
+    event = threading.Event()
 
     def main(self):
         nonlocal thread
         assert self is irc
         thread = threading.current_thread()
+        event.set()
 
     monkeypatch.setattr(DummyIRC, '_main', main)
 
     assert irc._main_thread is None
     irc._start_main_loop()
-    assert irc._main_thread is thread
+    main_thread = irc._main_thread
+    assert event.wait(1)
+    assert main_thread is irc._main_thread is thread
     assert not hasattr(irc, '_main_lock')
 
 def test_connection(monkeypatch):
