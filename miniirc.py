@@ -8,9 +8,9 @@
 import atexit, collections, errno, threading, time, types, re, socket, ssl, sys
 
 # The version string and tuple
-ver = __version_info__ = (2,0,0,'a5')
-version = 'miniirc IRC framework v2.0.0a5'
-__version__ = '2.0.0a5'
+ver = __version_info__ = (2,0,0,'a6')
+version = 'miniirc IRC framework v2.0.0a6'
+__version__ = '2.0.0a6'
 
 # __all__ and _default_caps
 __all__ = ['CmdHandler', 'Handler', 'IRC']
