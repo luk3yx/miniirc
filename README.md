@@ -11,7 +11,7 @@ If you have previously used miniirc, you may want to read the
 
 *This repository is available on both [GitHub](https://github.com/luk3yx/miniirc) and [GitLab](https://gitlab.com/luk3yx/miniirc).*
 
-[Python 3.4+]: https://img.shields.io/badge/python-3.4/3.5+-blue.svg
+[Python 3.4+]: https://img.shields.io/badge/python-3.4+-blue.svg
 [Available on PyPI.]: https://img.shields.io/pypi/v/miniirc.svg
 [License: MIT]: https://img.shields.io/pypi/l/miniirc.svg
 [deprecations list]: #deprecations
@@ -50,13 +50,13 @@ irc.wait_until_disconnected()
 | `port`        | The port to connect to.                                   |
 | `nick`        | The nickname of the bot.                                  |
 | `channels`    | The channels to join on connect. This can be an iterable containing strings (list, set, etc), or (since v1.5.0) a comma-delimited string. |
-| `ssl`         | Enable TLS/SSL. If `None`, TLS/SSL is disabled unless the port is `6697`. |
+| `ssl`         | Enable TLS/SSL. If `None`, TLS is disabled unless the port is `6697`. |
 | `ident`       | The ident to use, defaults to `nick`.                     |
 | `realname`    | The realname to use, defaults to `nick` as well.          |
 | `persist`     | Whether to automatically reconnect.                       |
 | `debug`       | Enables debug mode, prints all IRC messages. This can also be a file-like object (with write mode enabled) if you want debug messages to be written into a file instead of being printed to stdout, or a function (for example `logging.debug`). |
 | `ns_identity` | The NickServ account to use as a tuple/list of length 2 (`('<user>', '<password>')`). For compatibility, this can be a string (`'<user> <password>'`). |
-| `auto_connect`| Runs `.connect()` straight away.                          |
+| `auto_connect`| Runs `irc.connect()` straight away.                          |
 | `ircv3_caps`  | A set() of additional IRCv3 capabilities to request. SASL is auto-added if `ns_identity` is specified. |
 | `connect_modes` | A mode string (for example `'+B'`) of UMODEs to set when connected. |
 | `quit_message`| Sets the default quit message. This can be modified per-quit with `irc.disconnect()`. |
@@ -297,7 +297,7 @@ handler will be called many times while connecting (and once connected).
 import miniirc
 
 # Not required, however this makes sure miniirc isn't outdated.
-assert miniirc.ver >= (1,7,2)
+assert miniirc.ver >= (1,8,2)
 
 @miniirc.Handler('PRIVMSG', 'NOTICE', colon=True)
 def handler(irc, hostmask, args):
@@ -330,19 +330,17 @@ change.
 
 ## Python version support
 
- - Python 2 does not work and will (probably) never work with miniirc. If you
-    MUST use Python 2, you could try manually porting miniirc.
- - Python 3.3 and below probably won't work, and fixes will not be added unless
-    they are very trivial.
- - Python 3.4 and 3.5 support will be dropped in miniirc v2.1.0 (miniirc v2.0.0
-     will have backported bugfixes for a few months).
- - Python 3.6 and above should work with the latest stable version of miniirc.
+ - Python 3.3 and below are unsupported and do not work with miniirc.
+ - Python 3.4, 3.5, and 3.6 are currently supported, but support will likely be
+   dropped in miniirc v2.1.0. Major bugfixes may be backported to v2.0 for a
+   few months after v2.1's release.
+ - Python 3.7 and above should work with the latest stable version of miniirc.
 
 If there is a bug/error in Python 3.4 or newer, please open an issue or pull
 request on [GitHub](https://github.com/luk3yx/miniirc/issues) or
 [GitLab](https://gitlab.com/luk3yx/miniirc/issues).
 
-*If you are using Python 3.5 or an older version of Python, I strongly
+*If you are using Python 3.7 or an older version of Python, I strongly
 recommend updating. Later versions of Python include features such as f-strings
 that make software development easier.*
 
