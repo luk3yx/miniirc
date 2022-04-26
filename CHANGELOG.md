@@ -8,6 +8,24 @@ Notes:
  - This changelog may contain typographical errors, it is still a
     work-in-progress.
 
+## 1.8.2 - 2022-04-26
+
+### Added
+
+ - Support for [SNI](https://en.wikipedia.org/wiki/Server_Name_Indication).
+
+### Changed
+
+ - `socket.create_connection()` is now used internally. If a domain name has
+   multiple IP addresses and the connection fails, socket.create_connection()
+   will attempt to connect to the next IP address in the list. This is an
+   improvement over miniirc's previous behaviour of only trying the first IP
+   address.
+ - `ping_timeout` is now used as a connection timeout during socket setup.
+ - A warning is now emitted if `verify_ssl` is disabled.
+ - `SSLContext.wrap_socket()` is used instead of `ssl.wrap_socket()`.
+ - The miniirc PyPI package now requires Python 3.4 or later.
+
 ## 1.8.1 - 2022-04-08
 
 ### Changed

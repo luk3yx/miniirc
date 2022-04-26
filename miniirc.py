@@ -8,9 +8,9 @@
 import atexit, collections, errno, threading, time, types, re, socket, ssl, sys
 
 # The version string and tuple
-ver = __version_info__ = (2,0,0,'a6')
-version = 'miniirc IRC framework v2.0.0a6'
-__version__ = '2.0.0a6'
+ver = __version_info__ = (2,0,0,'a7')
+version = 'miniirc IRC framework v2.0.0a7'
+__version__ = '2.0.0a7'
 
 # __all__ and _default_caps
 __all__ = ['CmdHandler', 'Handler', 'IRC']
@@ -319,21 +319,21 @@ class IRC:
             self._send_lock.release()
 
         self.debug('Connecting to', self.ip, 'port', self.port)
-        addrinfo = socket.getaddrinfo(self.ip, self.port, 0,
-            socket.SOCK_STREAM)[0]
-        self.sock = socket.socket(*addrinfo[:2])
+        self.sock = socket.create_connection(
+            (self.ip, self.port),
+            timeout=self.ping_timeout or self.ping_interval,
+        )
         if self.ssl:
             self.debug('SSL handshake')
+            ctx = ssl.create_default_context(cafile=get_ca_certs())
             if self.verify_ssl:
-                self.sock = ssl.wrap_socket(self.sock,
-                    cert_reqs=ssl.CERT_REQUIRED, ca_certs=get_ca_certs(),
-                    do_handshake_on_connect=True)
+                assert ctx.check_hostname
             else:
-                self.sock = ssl.wrap_socket(self.sock,
-                    do_handshake_on_connect=True)
-        self.sock.connect(addrinfo[4])
-        if self.ssl and self.verify_ssl:
-            ssl.match_hostname(self.sock.getpeercert(), self.ip)
+                warnings.warn('Disabling verify_ssl is usually a bad idea.')
+                ctx.check_hostname = False
+                ctx.verify_mode = ssl.CERT_NONE
+            self.sock = ctx.wrap_socket(self.sock, server_hostname=self.ip)
+
         self._unhandled_caps = None
         self.current_nick = self.nick
         self.quote('CAP LS 302', force=True)

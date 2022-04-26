@@ -271,7 +271,7 @@ def test_connection(monkeypatch):
 
     class fakesocket(socket.socket):
         @catch_errors
-        def __init__(self, __family, __type):
+        def __init__(self, __family, __type, *args):
             assert __family in (socket.AF_INET, socket.AF_INET6)
             assert __type == socket.SOCK_STREAM
 
