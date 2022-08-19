@@ -5,7 +5,7 @@
 This branch contains a miniirc v2.0.0 pre-release, the documentation is probably
 out-of-date and breaking changes can and will happen without notice.
 
-[![Python 3.4+]](#python-version-support) [![Available on PyPI.]](https://pypi.org/project/miniirc/) [![License: MIT]](https://github.com/luk3yx/miniirc/blob/master/LICENSE.md)
+[![Python 3.6+]](#python-version-support) [![Available on PyPI.]](https://pypi.org/project/miniirc/) [![License: MIT]](https://github.com/luk3yx/miniirc/blob/master/LICENSE.md)
 
 A relatively simple thread-safe(-ish) IRC client framework.
 
@@ -16,7 +16,7 @@ If you have previously used miniirc, you may want to read the
 
 *This repository is available on both [GitHub](https://github.com/luk3yx/miniirc) and [GitLab](https://gitlab.com/luk3yx/miniirc).*
 
-[Python 3.4+]: https://img.shields.io/badge/python-3.4+-blue.svg
+[Python 3.6+]: https://img.shields.io/badge/python-3.6+-blue.svg
 [Available on PyPI.]: https://img.shields.io/pypi/v/miniirc.svg
 [License: MIT]: https://img.shields.io/pypi/l/miniirc.svg
 [deprecations list]: #deprecations

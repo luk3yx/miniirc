@@ -2,7 +2,10 @@
 
 name: Test with pytest
 
-on: [push]
+on:
+  push:
+    paths:
+      - '*.py'
 
 jobs:
   run-tests:
@@ -21,6 +24,6 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install certifi pytest 'typing;python_version<"3.5"'
+        pip install certifi pytest
     - name: Run pytest
       run: pytest
