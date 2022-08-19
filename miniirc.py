@@ -2,10 +2,10 @@
 #
 # miniirc - A small-ish IRC framework.
 #
-# © 2018-2021 by luk3yx and other contributors of miniirc.
+# © 2018-2022 by luk3yx and other contributors of miniirc.
 #
 
-import atexit, collections, errno, threading, time, types, re, socket, ssl, sys
+import asyncio, collections, threading, time, types, re, ssl, sys
 
 # The version string and tuple
 ver = __version_info__ = (2,0,0,'a7')
@@ -29,13 +29,13 @@ except ImportError:
 _global_handlers = {}
 
 class _Handler:
-    __slots__ = ('func', 'cmdhandler', 'ircv3', 'run_in_thread')
+    __slots__ = ('func', 'awaitable', 'cmdhandler', 'ircv3')
 
     def __init__(self, func, *, cmdhandler, ircv3):
         self.func = func
+        self.awaitable = asyncio.iscoroutinefunction(func)
         self.cmdhandler = cmdhandler
         self.ircv3 = ircv3
-        self.run_in_thread = True
 
 def _add_handler(handlers, events, ircv3, cmdhandler, colon):
     if colon:
@@ -170,6 +170,12 @@ def _prune_arg(arg):
         arg = '\u0703' + arg[1:]
     return arg.replace(' ', '\xa0').replace('\r', '\xa0').replace('\n', '\xa0')
 
+async def _suppress_oserror(coro):
+    try:
+        return await coro
+    except OSError:
+        pass
+
 # Create the IRC class
 class IRC:
     connected = None
@@ -177,6 +183,7 @@ class IRC:
     _sendq = None
     msglen = 512
     _main_thread = None
+    _loop = None
     _sasl = False
     _unhandled_caps = None
 
@@ -248,50 +255,55 @@ class IRC:
 
     # Send raw messages
     def quote(self, *msg, force=False, tags=None):
-        if not self.connected and not force:
-            self.debug('>Q>', *msg)
-            if not self._sendq:
-                self._sendq = []
-            self._sendq.append((tags, msg))
-            return
+        with self._send_lock:
+            if not self.connected and not force:
+                self.debug('>Q>', *msg)
+                if not self._sendq:
+                    self._sendq = []
+                self._sendq.append((tags, msg))
+                return
 
-        self.debug('>>>', *msg)
-        msg = (' '.join(msg).encode('utf-8').replace(b'\r', b' ')
-               .replace(b'\n', b' '))
+            self.debug('>>>', *msg)
+            msg = (' '.join(msg).encode('utf-8').replace(b'\r', b' ')
+                   .replace(b'\n', b' '))
 
-        if len(msg) + 2 > self.msglen:
-            msg = msg[:self.msglen - 2]
-            if msg[-1] >= 0x80:
-                msg = msg.decode('utf-8', 'ignore').encode('utf-8')
+            if len(msg) + 2 > self.msglen:
+                msg = msg[:self.msglen - 2]
+                if msg[-1] >= 0x80:
+                    msg = msg.decode('utf-8', 'ignore').encode('utf-8')
 
-        if isinstance(tags, dict) and 'message-tags' in self.active_caps:
-            msg = _dict_to_tags(tags) + msg
+            if isinstance(tags, dict) and 'message-tags' in self.active_caps:
+                msg = _dict_to_tags(tags) + msg
 
-        self._send_lock.acquire()
-        try: # Apparently try/finally is faster than "with".
-            self.sock.sendall(msg + b'\r\n')
-        except (AttributeError, BrokenPipeError):
-            pass
-        finally:
-            self._send_lock.release()
+            msg += b'\r\n'
+            if threading.current_thread() == self._main_thread:
+                self._writer.write(msg)
+
+                # Allow await to be used
+                return self._loop.create_task(_suppress_oserror(
+                    self._writer.drain()
+                ))
+            else:
+                self._loop.call_soon_threadsafe(self._writer.write, msg)
 
     def send(self, command, *args, force=False, tags=None):
         if args:
-            self.quote(
+            return self.quote(
                 command,
-                *tuple(map(_prune_arg, args[:-1])) + (':' + args[-1],),
+                *map(_prune_arg, args[:-1]),
+                ':' + args[-1],
                 force=force,
                 tags=tags
             )
         else:
-            self.quote(command, force=force, tags=tags)
+            return self.quote(command, force=force, tags=tags)
 
     # User-friendly msg, notice, and CTCP functions.
     def msg(self, target, *msg, tags=None):
-        self.quote('PRIVMSG', target, ':' + ' '.join(msg), tags=tags)
+        return self.quote('PRIVMSG', target, ':' + ' '.join(msg), tags=tags)
 
     def notice(self, target, *msg, tags=None):
-        self.quote('NOTICE', target, ':' + ' '.join(msg), tags=tags)
+        return self.quote('NOTICE', target, ':' + ' '.join(msg), tags=tags)
 
     def ctcp(self, target, *msg, reply=False, tags=None):
         m = (self.notice if reply else self.msg)
@@ -309,38 +321,15 @@ class IRC:
 
     # The connect function
     def connect(self):
-        self._send_lock.acquire()
-        try:
-            if self.connected is not None:
-                self.debug('Already connected!')
-                return
-            self.connected = False
-        finally:
-            self._send_lock.release()
+        if self.connected is not None:
+            self.debug('Already connected!')
+            return
+        self.connected = False
 
         self.debug('Connecting to', self.ip, 'port', self.port)
-        self.sock = socket.create_connection(
-            (self.ip, self.port),
-            timeout=self.ping_timeout or self.ping_interval,
-        )
-        if self.ssl:
-            self.debug('SSL handshake')
-            ctx = ssl.create_default_context(cafile=get_ca_certs())
-            if self.verify_ssl:
-                assert ctx.check_hostname
-            else:
-                warnings.warn('Disabling verify_ssl is usually a bad idea.')
-                ctx.check_hostname = False
-                ctx.verify_mode = ssl.CERT_NONE
-            self.sock = ctx.wrap_socket(self.sock, server_hostname=self.ip)
 
         self._unhandled_caps = None
         self.current_nick = self.nick
-        self.quote('CAP LS 302', force=True)
-        self.quote('USER', self.ident, '0', '*', ':' + self.realname,
-            force=True)
-        self.quote('NICK', self.nick, force=True)
-        atexit.register(self.disconnect)
         self.debug('Starting main loop...')
         self._sasl = self._pinged = False
         self._start_main_loop()
@@ -348,26 +337,37 @@ class IRC:
     def _start_main_loop(self):
         # Start the thread before updating _main_thread so that
         # wait_until_disconnected() works correctly.
+        self._loop = None
         thread = threading.Thread(target=self._main)
         thread.start()
         self._main_thread = thread
 
     # Disconnect from IRC.
     def disconnect(self, msg=None, *, auto_reconnect=False):
+        with self._send_lock:
+            if self._loop is None:
+                return
+
+            if threading.current_thread() != self._main_thread:
+                self._loop.call_soon_threadsafe(
+                    lambda: self.disconnect(msg, auto_reconnect=auto_reconnect)
+                )
+                return
+
         self.persist = auto_reconnect and self.persist
         self.connected = None
         self.active_caps.clear()
-        atexit.unregister(self.disconnect)
         self._unhandled_caps = None
         try:
-            self.quote('QUIT :' + str(msg or self.quit_message), force=True)
-            self.sock.shutdown(socket.SHUT_RDWR)
-        except:
+            self.quote('QUIT :' + str(msg or self.quit_message),
+                       force=True)
+        except Exception:
             pass
-        try:
-            self.sock.close()
-        except:
-            pass
+
+        self._writer.close()
+        return self._loop.create_task(_suppress_oserror(
+            self._writer.wait_closed()
+        ))
 
     # Finish capability negotiation
     def finish_negotiation(self, cap):
@@ -394,12 +394,11 @@ class IRC:
             if handler.cmdhandler:
                 params.insert(1, msg.command)
 
-            if not handler.run_in_thread:
-                try:
-                    handler.func(*params)
-                except:
-                    import traceback
-                    traceback.print_exc()
+            if handler.awaitable:
+                # This may be called from another thread
+                self._loop.call_soon_threadsafe(
+                    lambda: asyncio.create_task(handler.func(*params))
+                )
             elif self._executor is not None:
                 self._executor.submit(handler.func, *params)
             else:
@@ -432,52 +431,80 @@ class IRC:
 
     # The main loop
     def _main(self):
+        with self._send_lock:
+            # Make sure self._main_thread is set
+            loop = self._loop = asyncio.new_event_loop()
+            self._main_thread = threading.current_thread()
+
+        try:
+            loop.run_until_complete(self._async_main())
+        finally:
+            loop.close()
+
+    async def _async_main(self):
+        ctx = None
+        if self.ssl:
+            ctx = ssl.create_default_context(cafile=get_ca_certs())
+            if self.verify_ssl:
+                assert ctx.check_hostname
+            else:
+                warnings.warn('Disabling verify_ssl is usually a bad idea.')
+                ctx.check_hostname = False
+                ctx.verify_mode = ssl.CERT_NONE
+
+        self._reader, self._writer = await asyncio.wait_for(
+            asyncio.open_connection(self.ip, self.port, ssl=ctx),
+            timeout=self.ping_timeout or self.ping_interval,
+        )
+
+        # Send initial messages
+        await self.quote('CAP LS 302', force=True)
+        await self.quote('USER', self.ident, '0', '*', ':' + self.realname,
+                         force=True)
+        await self.quote('NICK', self.nick, force=True)
+
         self.debug('Main loop running!')
-        buffer = b''
         while True:
             try:
-                assert len(buffer) < 65535, 'Very long line detected!'
                 try:
-                    raw = self.sock.recv(8192).replace(b'\r', b'\n')
-                    if not raw:
-                        raise ConnectionAbortedError
-                    buffer += raw
-                except socket.timeout:
+                    # Use readuntil so that partial lines aren't read
+                    line = await asyncio.wait_for(
+                        self._reader.readuntil(b'\n'),
+                        timeout=self._pinged and self.ping_timeout or
+                                self.ping_interval
+                    )
+                except asyncio.TimeoutError:
                     if self._pinged:
                         raise
-                    else:
-                        self._pinged = True
-                        if self.ping_timeout:
-                            self.sock.settimeout(self.ping_timeout)
-                        self.quote('PING', ':miniirc-ping', force=True)
-                except socket.error as e:
-                    if e.errno != errno.EWOULDBLOCK:
-                        raise
-            except (OSError, socket.error) as e:
-                self.debug('Lost connection!', repr(e))
-                self.disconnect(auto_reconnect=True)
+
+                    self._pinged = True
+                    await self.quote('PING :miniirc-ping', force=True)
+                    continue
+
+                if not line:
+                    raise ConnectionAbortedError
+            except (asyncio.IncompleteReadError, asyncio.LimitOverrunError,
+                    asyncio.TimeoutError, OSError) as exc:
+                self.debug('Lost connection!', repr(exc))
+                await self.disconnect(auto_reconnect=True)
+
                 while self.persist:
-                    time.sleep(5)
+                    await asyncio.sleep(5)
                     self.debug('Reconnecting...')
                     try:
                         self.connect()
-                    except (OSError, socket.error):
+                        break
+                    except OSError:
                         self.debug('Failed to reconnect!')
                         self.connected = None
-                    else:
-                        return
+
                 return
 
-            raw = buffer.split(b'\n')
-            buffer = raw.pop()
-            for line in raw:
-                line = line.decode('utf-8', 'replace')
-                if not line:
-                    continue
-
-                self.debug('<<<', line)
+            line_str = line.rstrip(b'\r\n').decode('utf-8', 'replace')
+            if line_str:
+                self.debug('<<<', line_str)
                 try:
-                    msg = self._parse(line)
+                    msg = self._parse(line_str)
                     if isinstance(msg, IRCMessage):
                         self.handle_msg(msg)
                     else:
@@ -485,7 +512,6 @@ class IRC:
                 except:
                     import traceback
                     traceback.print_exc()
-            del raw
 
     def wait_until_disconnected(self, *, _timeout=None):
         # The main thread may be replaced on reconnects
@@ -498,8 +524,6 @@ def _handler(irc, hostmask, args):
     irc.connected = True
     irc.isupport.clear()
     irc._unhandled_caps = None
-    if irc.ping_interval:
-        irc.sock.settimeout(irc.ping_interval)
     irc.debug('Connected!')
     if irc.connect_modes:
         irc.quote('MODE', irc.nick, irc.connect_modes)
@@ -524,8 +548,6 @@ def _handler(irc, hostmask, args):
 def _handler(irc, hostmask, args):
     if args and args[-1] == 'miniirc-ping' and irc.ping_interval:
         irc._pinged = False
-        if irc.ping_timeout:
-            irc.sock.settimeout(irc.ping_interval)
 
 @Handler('432', '433')
 def _handler(irc, hostmask, args):
@@ -627,8 +649,8 @@ def _handler(irc, hostmask, args):
 def _handler(irc, hostmask, args):
     if not irc.ssl and len(args) == 2:
         try:
-            port = int(_tags_to_dict(args[1].split(','))['port'])
-        except (IndexError, ValueError):
+            port = int(_tag_list_to_dict(args[1].split(','))['port'])
+        except (IndexError, KeyError, ValueError):
             return
 
         # Stop irc.wait_until_disconnected() from returning early

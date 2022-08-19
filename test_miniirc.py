@@ -55,7 +55,7 @@ if MINIIRC_V2:
         assert handler.cmdhandler == cmdhandler
         assert not colon
         assert handler.ircv3 == ircv3
-        assert handler.run_in_thread
+        assert not handler.awaitable
 else:
     def verify_handler(event, cmdhandler, colon, ircv3):
         func = miniirc._global_handlers[event][-1]
@@ -232,23 +232,14 @@ def test_start_main_loop(monkeypatch):
     assert main_thread is irc._main_thread is thread
     assert not hasattr(irc, '_main_lock')
 
-def test_connection(monkeypatch):
+def test_connection():
     irc = err = None
 
-    # Prevent miniirc catching fakesocket errors
-    def catch_errors(func):
-        @functools.wraps(func)
-        def wrapper(self, *args, **kwargs):
-            nonlocal err
-            try:
-                return func(self, *args, **kwargs)
-            except Exception as e:
-                err = err or e
-                if MINIIRC_V2:
-                    self._sock.close()
-                else:
-                    self.sock.close()
-        return wrapper
+    sock = socket.socket()
+    sock.bind(('127.0.0.1', 0))
+    ip, port = sock.getsockname()
+    sock.listen(1)
+    sock.settimeout(3)
 
     fixed_responses = {
         'CAP LS 302': 'CAP * LS :abc sasl account-tag',
@@ -269,62 +260,11 @@ def test_connection(monkeypatch):
         'QUIT :I grew sick and died.': '',
     }
 
-    class fakesocket(socket.socket):
-        @catch_errors
-        def __init__(self, __family, __type, *args):
-            assert __family in (socket.AF_INET, socket.AF_INET6)
-            assert __type == socket.SOCK_STREAM
-
-        @catch_errors
-        def connect(self, __addr):
-            assert __addr[1] == 6667
-            self._recvq = queue.Queue()
-
-        @catch_errors
-        def send(self, data):
-            raise ValueError('socket.send() used in place of socket.sendall()')
-
-        @catch_errors
-        def sendall(self, data):
-            msg = data.decode('utf-8')
-            assert msg.endswith('\r\n')
-            msg = msg[:-2]
-            assert msg in fixed_responses
-            if self._recvq is None:
-                return
-            for line in fixed_responses[msg].split('\n'):
-                self._recvq.put(line.encode('utf-8') +
-                    random.choice((b'\r', b'\n', b'\r\n', b'\n\r')))
-
-        @catch_errors
-        def recv(self, chunk_size):
-            assert chunk_size == 8192
-            if err is not None or self._recvq is None:
-                return b''
-            else:
-                return self._recvq.get()
-
-        def close(self):
-            nonlocal err
-            err = err or BrokenPipeError('Socket closed')
-            event.set()
-            if self._recvq:
-                self._recvq.put(b'')
-                self._recvq = None
-
-        def settimeout(self, t):
-            assert t == 60
-
-    monkeypatch.setattr(socket, 'socket', fakesocket)
-
     try:
-        event = threading.Event()
-        irc = miniirc.IRC('example.com', 6667, 'miniirc-test',
-            auto_connect=False, ns_identity=('test', 'hunter2'), persist=False,
-            debug=True)
+        irc = miniirc.IRC(ip, port, 'miniirc-test', auto_connect=False,
+            ns_identity=('test', 'hunter2'), persist=False, debug=True)
         assert irc.connected is None
         @irc.Handler('001', colon=False)
-        @catch_errors
         def _handle_001(irc, hostmask, args):
             for i in range(100):
                 if 'CAP' in irc.isupport and 'CTCP' in irc.isupport:
@@ -332,12 +272,21 @@ def test_connection(monkeypatch):
                 time.sleep(0.001)
             assert args == ['parameter', 'test', 'with colon']
             assert irc.isupport == {'CTCP': 'VERSION', 'CAP': 'END'}
-            event.set()
+            irc.send('SUCCESS')
 
         irc.connect()
-        assert event.wait(3) or err is not None
-        if err is not None:
-            raise err
+
+        # Send responses to/from the fake client
+        conn, _ = sock.accept()
+        conn.settimeout(3)
+        f = conn.makefile()
+        for line in conn.makefile():
+            msg = line.rstrip('\r\n')
+            if msg == 'SUCCESS':
+                break
+            assert msg in fixed_responses
+            conn.sendall((fixed_responses[msg] + '\r\n').encode('utf-8'))
+
         assert irc.connected
         if MINIIRC_V2:
             assert irc.nick == 'miniirc-test'
