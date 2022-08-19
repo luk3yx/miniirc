@@ -191,7 +191,7 @@ class IRC:
                  realname=None, persist=True, debug=False, ns_identity=None,
                  auto_connect=True, ircv3_caps=None, connect_modes=None,
                  quit_message='I grew sick and died.', ping_interval=60,
-                 ping_timeout=None, verify_ssl=True, executor=None):
+                 ping_timeout=None, verify_ssl=True, executor=None, loop=None):
         # Set basic variables
         self.ip = ip
         self.port = int(port)
@@ -244,7 +244,9 @@ class IRC:
 
         # Start the connection
         if auto_connect:
-            self.connect()
+            self.connect(loop=loop)
+        elif loop is not None:
+            raise TypeError('loop cannot be specified with auto_connect=False')
 
     # Debug print()
     def debug(self, *args, **kwargs):
@@ -320,16 +322,23 @@ class IRC:
         return _add_handler(self._handlers, events, ircv3, True, )
 
     # The connect function
-    def connect(self):
-        if self.connected is not None:
-            self.debug('Already connected!')
-            return
-        self.connected = False
-        self._unhandled_caps = None
-        self.current_nick = self.nick
-        self.debug('Starting main loop...')
-        self._sasl = self._pinged = False
-        self._start_main_loop()
+    def connect(self, *, loop=None):
+        with self._send_lock:
+            if self.connected is not None:
+                self.debug('Already connected!')
+                return
+            self.connected = False
+            self._unhandled_caps = None
+            self.current_nick = self.nick
+            self.debug('Starting main loop...')
+            self._sasl = self._pinged = False
+
+            if loop is None:
+                self._start_main_loop()
+            else:
+                self._loop = loop
+                self._main_thread = threading.current_thread()
+                loop.create_task(self._async_main())
 
     def _start_main_loop(self):
         # Start the thread before updating _main_thread so that
