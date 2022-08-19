@@ -394,7 +394,7 @@ class IRC:
             if handler.awaitable:
                 # This may be called from another thread
                 self._loop.call_soon_threadsafe(
-                    lambda: asyncio.create_task(handler.func(*params))
+                    lambda: self._loop.create_task(handler.func(*params))
                 )
             elif self._executor is not None:
                 self._executor.submit(handler.func, *params)
@@ -547,11 +547,11 @@ async def _handler(irc, hostmask, args):
             await irc.quote(*args, tags=tags)
 
 @Handler('PING')
-def _handler(irc, hostmask, args):
+async def _handler(irc, hostmask, args):
     irc.send('PONG', *args, force=True)
 
 @Handler('PONG')
-def _handler(irc, hostmask, args):
+async def _handler(irc, hostmask, args):
     if args and args[-1] == 'miniirc-ping' and irc.ping_interval:
         irc._pinged = False
 
