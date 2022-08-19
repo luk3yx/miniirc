@@ -542,8 +542,9 @@ async def _handler(irc, hostmask, args):
 
     with irc._send_lock:
         sendq, irc._sendq = irc._sendq, None
-    for tags, args in sendq:
-        await irc.quote(*args, tags=tags)
+    if sendq:
+        for tags, args in sendq:
+            await irc.quote(*args, tags=tags)
 
 @Handler('PING')
 def _handler(irc, hostmask, args):
