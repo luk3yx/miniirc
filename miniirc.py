@@ -468,6 +468,8 @@ class IRC:
                 await self._send_initial_msgs()
                 break
             except (asyncio.TimeoutError, OSError):
+                if hasattr(self, '_writer'):
+                    self._writer.close()
                 if not self.persist:
                     raise
 
