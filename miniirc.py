@@ -8,9 +8,9 @@
 import asyncio, collections, threading, time, types, re, ssl, sys
 
 # The version string and tuple
-ver = __version_info__ = (2,0,0,'a7')
-version = 'miniirc IRC framework v2.0.0a7'
-__version__ = '2.0.0a7'
+ver = __version_info__ = (2,0,0,'a8')
+version = 'miniirc IRC framework v2.0.0a8'
+__version__ = '2.0.0a8'
 
 # __all__ and _default_caps
 __all__ = ['CmdHandler', 'Handler', 'IRC']
@@ -307,7 +307,7 @@ class IRC:
 
     def ctcp(self, target, *msg, reply=False, tags=None):
         m = (self.notice if reply else self.msg)
-        return m(target, '\x01{}\x01'.format(' '.join(msg)), tags=tags)
+        return m(target, f'\x01{" ".join(msg)}\x01', tags=tags)
 
     def me(self, target, *msg, tags=None):
         return self.ctcp(target, 'ACTION', *msg, tags=tags)
@@ -325,9 +325,6 @@ class IRC:
             self.debug('Already connected!')
             return
         self.connected = False
-
-        self.debug('Connecting to', self.ip, 'port', self.port)
-
         self._unhandled_caps = None
         self.current_nick = self.nick
         self.debug('Starting main loop...')
@@ -441,6 +438,12 @@ class IRC:
         finally:
             loop.close()
 
+    async def _send_initial_msgs(self):
+        await self.quote('CAP LS 302', force=True)
+        await self.quote('USER', self.ident, '0', '*', ':' + self.realname,
+                         force=True)
+        await self.quote('NICK', self.nick, force=True)
+
     async def _async_main(self):
         ctx = None
         if self.ssl:
@@ -452,16 +455,25 @@ class IRC:
                 ctx.check_hostname = False
                 ctx.verify_mode = ssl.CERT_NONE
 
-        self._reader, self._writer = await asyncio.wait_for(
-            asyncio.open_connection(self.ip, self.port, ssl=ctx),
-            timeout=self.ping_timeout or self.ping_interval,
-        )
+        # Try to connect
+        while True:
+            try:
+                self.debug('Connecting to', self.ip, 'port', self.port)
+                self._reader, self._writer = await asyncio.wait_for(
+                    asyncio.open_connection(self.ip, self.port, ssl=ctx),
+                    timeout=self.ping_timeout or self.ping_interval,
+                )
 
-        # Send initial messages
-        await self.quote('CAP LS 302', force=True)
-        await self.quote('USER', self.ident, '0', '*', ':' + self.realname,
-                         force=True)
-        await self.quote('NICK', self.nick, force=True)
+                # Send initial messages
+                await self._send_initial_msgs()
+                break
+            except (asyncio.TimeoutError, OSError):
+                if not self.persist:
+                    raise
+
+                self.debug('Failed to reconnect, trying again in 5 seconds.')
+                await asyncio.sleep(5)
+
 
         self.debug('Main loop running!')
         while True:
@@ -488,16 +500,10 @@ class IRC:
                 self.debug('Lost connection!', repr(exc))
                 await self.disconnect(auto_reconnect=True)
 
-                while self.persist:
+                if self.persist:
                     await asyncio.sleep(5)
                     self.debug('Reconnecting...')
-                    try:
-                        self.connect()
-                        break
-                    except OSError:
-                        self.debug('Failed to reconnect!')
-                        self.connected = None
-
+                    self.connect()
                 return
 
             line_str = line.rstrip(b'\r\n').decode('utf-8', 'replace')
@@ -520,25 +526,24 @@ class IRC:
 
 # Handle some IRC messages by default.
 @Handler('001')
-def _handler(irc, hostmask, args):
+async def _handler(irc, hostmask, args):
     irc.connected = True
     irc.isupport.clear()
     irc._unhandled_caps = None
     irc.debug('Connected!')
     if irc.connect_modes:
-        irc.quote('MODE', irc.nick, irc.connect_modes)
+        await irc.quote('MODE', irc.nick, irc.connect_modes)
     if not irc._sasl and irc.ns_identity:
         irc.debug('Logging in (no SASL, aww)...')
-        irc.msg('NickServ', 'identify', *irc.ns_identity)
+        await irc.msg('NickServ', 'identify', *irc.ns_identity)
     if irc.channels:
         irc.debug('*** Joining channels...', irc.channels)
-        irc.quote('JOIN', ','.join(irc.channels))
+        await irc.quote('JOIN', ','.join(irc.channels))
 
     with irc._send_lock:
         sendq, irc._sendq = irc._sendq, None
-    if sendq:
-        for tags, args in sendq:
-            irc.quote(*args, tags=tags)
+    for tags, args in sendq:
+        await irc.quote(*args, tags=tags)
 
 @Handler('PING')
 def _handler(irc, hostmask, args):
