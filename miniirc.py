@@ -288,8 +288,9 @@ class IRC:
         self._send_lock.acquire()
         sent_bytes = 0
         try: # Apparently try/finally is faster than "with".
-            while sent_bytes < len(msg):
+            while True:
                 try:
+                    # Attempt to send to the socket
                     sent_bytes += self.sock.send(msg[sent_bytes:])
                 except ssl.SSLWantReadError:
                     # Wait for the socket to become ready again
@@ -297,9 +298,17 @@ class IRC:
                         (self.sock,), (), (self.sock,),
                         self.ping_timeout or self.ping_interval
                     )
+                    continue
                 except (BlockingIOError, ssl.SSLWantWriteError):
-                    select.select((), (self.sock,), (self.sock,),
-                                  self.ping_timeout or self.ping_interval)
+                    pass
+                else:
+                    # Break if enough data has been written
+                    if sent_bytes >= len(msg):
+                        break
+
+                # Otherwise wait for the socket to become writable
+                select.select((), (self.sock,), (self.sock,),
+                              self.ping_timeout or self.ping_interval)
         except (AttributeError, BrokenPipeError, socket.timeout):
             # TODO: Consider not silently ignoring timeouts
             if force:
