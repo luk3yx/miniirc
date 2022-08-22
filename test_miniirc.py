@@ -1,6 +1,6 @@
 #!/bin/false
-import collections, functools, miniirc, pathlib, queue, random, re, socket, \
-       threading, time
+import collections, functools, miniirc, pathlib, queue, random, re, select, \
+       socket, threading, time
 
 MINIIRC_V2 = miniirc.ver >= (2, 0, 0)
 if MINIIRC_V2:
@@ -236,6 +236,7 @@ def test_connection(monkeypatch):
                     self.sock.close()
         return wrapper
 
+    socket_event = threading.Event()
     fixed_responses = {
         'CAP LS 302': 'CAP * LS :abc sasl account-tag',
         'CAP REQ :account-tag sasl': 'CAP miniirc-test ACK :sasl account-tag',
@@ -281,14 +282,17 @@ def test_connection(monkeypatch):
             for line in fixed_responses[msg].split('\n'):
                 self._recvq.put(line.encode('utf-8') +
                     random.choice((b'\r', b'\n', b'\r\n', b'\n\r')))
+            socket_event.set()
 
-        @catch_errors
         def recv(self, chunk_size):
             assert chunk_size == 8192
             if err is not None or self._recvq is None:
                 return b''
             else:
-                return self._recvq.get()
+                try:
+                    return self._recvq.get_nowait()
+                except queue.Empty:
+                    raise BlockingIOError
 
         def close(self):
             nonlocal err
@@ -301,7 +305,20 @@ def test_connection(monkeypatch):
         def settimeout(self, t):
             assert t == 60
 
+        def setblocking(self, blocking):
+            assert not blocking
+
     monkeypatch.setattr(socket, 'socket', fakesocket)
+
+    def fake_select(send, recv, err, timeout):
+        assert send == err
+        assert not recv
+        assert timeout == 60
+        socket_event.wait()
+        socket_event.clear()
+        return send, recv, err
+
+    monkeypatch.setattr(select, 'select', fake_select)
 
     try:
         event = threading.Event()
@@ -332,3 +349,4 @@ def test_connection(monkeypatch):
             assert irc.nick == irc.current_nick == 'miniirc-test_'
     finally:
         irc.disconnect()
+        socket_event.set()

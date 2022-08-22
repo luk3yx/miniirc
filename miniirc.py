@@ -5,7 +5,7 @@
 # © 2018-2022 by luk3yx and other contributors of miniirc.
 #
 
-import atexit, errno, threading, time, socket, ssl, sys, warnings
+import atexit, errno, threading, time, select, socket, ssl, sys, warnings
 
 # The version string and tuple
 ver = __version_info__ = (1,8,2)
@@ -283,10 +283,24 @@ class IRC:
         if tags:
             msg = _dict_to_tags(tags) + msg
 
+        msg += b'\r\n'
         self._send_lock.acquire()
         try: # Apparently try/finally is faster than "with".
-            self.sock.sendall(msg + b'\r\n')
-        except (AttributeError, BrokenPipeError):
+            while True:
+                try:
+                    self.sock.sendall(msg)
+                    break
+                except (BlockingIOError, ssl.SSLWantReadError):
+                    # Wait for the socket to become ready again
+                    readable, _, _ = select.select(
+                        (self.sock,), (), (self.sock,),
+                        self.ping_timeout or self.ping_interval
+                    )
+                except ssl.SSLWantWriteError:
+                    select.select((), (self.sock,), (self.sock,),
+                                  self.ping_timeout or self.ping_interval)
+        except (AttributeError, BrokenPipeError, socket.timeout):
+            # TODO: Consider not silently ignoring timeouts
             if force:
                 raise
         finally:
@@ -445,27 +459,56 @@ class IRC:
 
     # The main loop
     def _main(self):
+        # Make the socket non-blocking.
+        self.sock.setblocking(False)
+
         self.debug('Main loop running!')
         buffer = b''
         while True:
             try:
                 assert len(buffer) < 65535, 'Very long line detected!'
                 try:
-                    raw = self.sock.recv(8192).replace(b'\r', b'\n')
+                    # Acquire the send lock when receiving data because I don't
+                    # think you're supposed to call SSL functions from multiple
+                    # threads at once
+                    self._send_lock.acquire()
+                    try:
+                        raw = self.sock.recv(8192).replace(b'\r', b'\n')
+                    finally:
+                        self._send_lock.release()
+
                     if not raw:
                         raise ConnectionAbortedError
                     buffer += raw
-                except socket.timeout:
-                    if self._pinged:
-                        raise
-                    else:
+                except (BlockingIOError, ssl.SSLWantReadError):
+                    # Wait for the socket to become ready again
+                    readable, _, _ = select.select(
+                        (self.sock,), (), (self.sock,),
+
+                        # self.ping_interval should be used when
+                        # self.ping_timeout is None
+                        (self._pinged and self.ping_timeout or
+                         self.ping_interval)
+                    )
+
+                    # Handle ping timeouts
+                    if not readable:
+                        if self._pinged:
+                            raise TimeoutError
                         self._pinged = True
-                        if self.ping_timeout:
-                            self.sock.settimeout(self.ping_timeout)
                         self.quote('PING', ':miniirc-ping', force=True)
+                except ssl.SSLWantWriteError:
+                    select.select((), (self.sock,), (self.sock,),
+                                  self.ping_timeout or self.ping_interval)
                 except socket.error as e:
                     if e.errno != errno.EWOULDBLOCK:
                         raise
+
+                    logger.warning('Running irc.sock.settimeout is not '
+                                   'supported and will break on some '
+                                   'Python/OpenSSL versions.')
+                    self.sock.setblocking(False)
+
             except (OSError, socket.error) as e:
                 self.debug('Lost connection!', repr(e))
                 self.disconnect(auto_reconnect=True)
@@ -518,8 +561,6 @@ def _handler(irc, hostmask, args):
     irc.connected = True
     irc.isupport.clear()
     irc._unhandled_caps = None
-    if irc.ping_interval:
-        irc.sock.settimeout(irc.ping_interval)
     irc.debug('Connected!')
     if irc.connect_modes:
         irc.quote('MODE', irc.nick, irc.connect_modes)
@@ -544,8 +585,6 @@ def _handler(irc, hostmask, args):
 def _handler(irc, hostmask, args):
     if args and args[-1] == 'miniirc-ping' and irc.ping_interval:
         irc._pinged = False
-        if irc.ping_timeout:
-            irc.sock.settimeout(irc.ping_interval)
 
 @Handler('432', '433')
 def _handler(irc, hostmask, args):

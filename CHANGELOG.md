@@ -8,6 +8,15 @@ Notes:
  - This changelog may contain typographical errors, it is still a
     work-in-progress.
 
+## 1.8.3 - 2022-08-22
+
+### Changed
+
+ - Receiving from the SSL socket is now done with a lock to prevent sending and
+   receiving at the same time (which can break with SSL).
+ - Because of the above change, `irc.sock` is now non-blocking and things that
+   call `irc.sock.settimeout()` may be broken.
+
 ## 1.8.2 - 2022-04-26
 
 ### Added
