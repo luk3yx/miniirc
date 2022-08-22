@@ -13,7 +13,8 @@ Notes:
 ### Changed
 
  - Receiving from the SSL socket is now done with a lock to prevent sending and
-   receiving at the same time (which can break with SSL).
+   receiving at the same time (which can break with SSL). This should fix
+   random disconnects with Ubuntu 22.04 / OpenSSL 3.
  - Because of the above change, `irc.sock` is now non-blocking and things that
    call `irc.sock.settimeout()` may be broken.
 

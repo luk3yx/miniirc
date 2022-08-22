@@ -8,9 +8,9 @@
 import atexit, errno, threading, time, select, socket, ssl, sys, warnings
 
 # The version string and tuple
-ver = __version_info__ = (1,8,2)
-version = 'miniirc IRC framework v1.8.2'
-__version__ = '1.8.2'
+ver = __version_info__ = (1,8,3)
+version = 'miniirc IRC framework v1.8.3'
+__version__ = '1.8.3'
 
 # __all__ and _default_caps
 __all__ = ['CmdHandler', 'Handler', 'IRC']
@@ -500,14 +500,6 @@ class IRC:
                 except ssl.SSLWantWriteError:
                     select.select((), (self.sock,), (self.sock,),
                                   self.ping_timeout or self.ping_interval)
-                except socket.error as e:
-                    if e.errno != errno.EWOULDBLOCK:
-                        raise
-
-                    logger.warning('Running irc.sock.settimeout is not '
-                                   'supported and will break on some '
-                                   'Python/OpenSSL versions.')
-                    self.sock.setblocking(False)
 
             except (OSError, socket.error) as e:
                 self.debug('Lost connection!', repr(e))
