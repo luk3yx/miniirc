@@ -319,7 +319,7 @@ class IRC:
         return _add_handler(self._handlers, events, ircv3, False, colon)
 
     def CmdHandler(self, *events, ircv3=False, colon=False):
-        return _add_handler(self._handlers, events, ircv3, True, )
+        return _add_handler(self._handlers, events, ircv3, True, colon)
 
     # The connect function
     def connect(self, *, loop=None):
