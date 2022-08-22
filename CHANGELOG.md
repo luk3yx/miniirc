@@ -16,7 +16,9 @@ Notes:
    receiving at the same time (which can break with SSL). This should fix
    random disconnects with Ubuntu 22.04 / OpenSSL 3.
  - Because of the above change, `irc.sock` is now non-blocking and things that
-   call `irc.sock.settimeout()` may be broken.
+   call `irc.sock.settimeout()` may break the connection or cause deadlocks.
+    - `irc.sock` hasn't been in the API documentation and has been deprecated
+      for a while.
 
 ## 1.8.2 - 2022-04-26
 
