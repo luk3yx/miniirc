@@ -8,9 +8,9 @@
 import atexit, errno, threading, time, select, socket, ssl, sys, warnings
 
 # The version string and tuple
-ver = __version_info__ = (1,8,3)
-version = 'miniirc IRC framework v1.8.3'
-__version__ = '1.8.3'
+ver = __version_info__ = (1,8,4)
+version = 'miniirc IRC framework v1.8.4'
+__version__ = '1.8.4'
 
 # __all__ and _default_caps
 __all__ = ['CmdHandler', 'Handler', 'IRC']
@@ -283,20 +283,21 @@ class IRC:
         if tags:
             msg = _dict_to_tags(tags) + msg
 
+        # Non-blocking sockets can't use sendall() reliably
         msg += b'\r\n'
         self._send_lock.acquire()
+        sent_bytes = 0
         try: # Apparently try/finally is faster than "with".
-            while True:
+            while sent_bytes < len(msg):
                 try:
-                    self.sock.sendall(msg)
-                    break
-                except (BlockingIOError, ssl.SSLWantReadError):
+                    sent_bytes += self.sock.send(msg[sent_bytes:])
+                except ssl.SSLWantReadError:
                     # Wait for the socket to become ready again
                     readable, _, _ = select.select(
                         (self.sock,), (), (self.sock,),
                         self.ping_timeout or self.ping_interval
                     )
-                except ssl.SSLWantWriteError:
+                except (BlockingIOError, ssl.SSLWantWriteError):
                     select.select((), (self.sock,), (self.sock,),
                                   self.ping_timeout or self.ping_interval)
         except (AttributeError, BrokenPipeError, socket.timeout):

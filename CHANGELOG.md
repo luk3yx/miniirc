@@ -8,6 +8,12 @@ Notes:
  - This changelog may contain typographical errors, it is still a
     work-in-progress.
 
+## 1.8.4 - 2022-08-22
+
+### Changed
+
+ - Fixed a socket-related oversight in v1.8.3.
+
 ## 1.8.3 - 2022-08-22
 
 ### Changed

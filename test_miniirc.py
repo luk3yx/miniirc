@@ -228,6 +228,8 @@ def test_connection(monkeypatch):
             nonlocal err
             try:
                 return func(self, *args, **kwargs)
+            except BlockingIOError:
+                raise
             except Exception as e:
                 err = err or e
                 if MINIIRC_V2:
@@ -261,6 +263,7 @@ def test_connection(monkeypatch):
         def __init__(self, __family, __type, *args):
             assert __family in (socket.AF_INET, socket.AF_INET6)
             assert __type == socket.SOCK_STREAM
+            self.__buf = b''
 
         @catch_errors
         def connect(self, __addr):
@@ -268,12 +271,23 @@ def test_connection(monkeypatch):
             self._recvq = queue.Queue()
 
         @catch_errors
-        def send(self, data):
-            raise ValueError('socket.send() used in place of socket.sendall()')
+        def sendall(self, data):
+            raise ValueError('socket.sendall() used on non blocking socket')
 
         @catch_errors
-        def sendall(self, data):
-            msg = data.decode('utf-8')
+        def send(self, data):
+            # Make sure that all data is sent
+            if len(data) > 5:
+                # Emulate the socket doing weird things
+                if random.randint(1, 3) == 1:
+                    raise BlockingIOError
+
+                sent_bytes = random.randrange(len(data))
+                self.__buf += data[:sent_bytes]
+                return sent_bytes
+
+            msg = (self.__buf + data).decode('utf-8')
+            self.__buf = b''
             assert msg.endswith('\r\n')
             msg = msg[:-2]
             assert msg in fixed_responses
@@ -283,7 +297,9 @@ def test_connection(monkeypatch):
                 self._recvq.put(line.encode('utf-8') +
                     random.choice((b'\r', b'\n', b'\r\n', b'\n\r')))
             socket_event.set()
+            return len(data)
 
+        @catch_errors
         def recv(self, chunk_size):
             assert chunk_size == 8192
             if err is not None or self._recvq is None:
@@ -310,13 +326,20 @@ def test_connection(monkeypatch):
 
     monkeypatch.setattr(socket, 'socket', fakesocket)
 
-    def fake_select(send, recv, err, timeout):
-        assert send == err
-        assert not recv
+    def fake_select(read, write, err, timeout):
+        assert read == err or write == err
+        assert len(err) == 1
         assert timeout == 60
+
+        # When waiting for writing just return immediately
+        if write:
+            assert not read
+            return read, write, err
+
+        # Otherwise wait for the next socket event
         socket_event.wait()
         socket_event.clear()
-        return send, recv, err
+        return read, write, err
 
     monkeypatch.setattr(select, 'select', fake_select)
 
