@@ -6,20 +6,20 @@ with open('README.md', 'r') as f:
     desc = f.read()
 
 setup(
-    name        = 'miniirc',
-    version     = '1.8.4',
-    py_modules  = ['miniirc'],
-    author      = 'luk3yx',
-    description = 'A lightweight IRC framework.',
-    url         = 'https://github.com/luk3yx/miniirc',
-    license     = 'MIT',
+    name='miniirc',
+    version='1.8.4',
+    py_modules=['miniirc'],
+    author='luk3yx',
+    description='A lightweight IRC framework.',
+    url='https://github.com/luk3yx/miniirc',
+    license='MIT',
 
-    long_description              = desc,
-    long_description_content_type = 'text/markdown',
-    install_requires              = ['certifi>=2020.4.5.1'],
-    python_requires               = '>=3.4',
+    long_description=desc,
+    long_description_content_type='text/markdown',
+    install_requires=['certifi>=2020.4.5.1'],
+    python_requires='>=3.4',
 
-    classifiers = [
+    classifiers=[
         'Intended Audience :: Developers',
         'Development Status :: 5 - Production/Stable',
         'License :: OSI Approved :: MIT License',

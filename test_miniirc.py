@@ -28,6 +28,7 @@ else:
         assert fill_in_hostmask('A', ('B', 'C')) == ('B', 'C', 'C')
         assert fill_in_hostmask('A', ('B', 'C', 'D')) == ('B', 'C', 'D')
 
+
 def test_message_parser():
     p = miniirc.ircv3_message_parser
     for i in range(4):
@@ -39,7 +40,8 @@ def test_message_parser():
     hostmask = fill_in_hostmask('Hi', ())
     assert (p(r'@tag1=value\:\swith\s\\spaces\rand\nnewlines;tag2;tag3= Hi') ==
             ('Hi', hostmask, {'tag1': 'value; with \\spaces\rand\nnewlines',
-            'tag2': True, 'tag3': True}, []))
+                              'tag2': True, 'tag3': True}, []))
+
 
 if MINIIRC_V2:
     def verify_handler(event, cmdhandler, colon, ircv3):
@@ -54,10 +56,12 @@ else:
         assert hasattr(func, 'miniirc_cmd_arg') == cmdhandler
         assert hasattr(func, 'miniirc_ircv3') == ircv3
 
+
 def test_Handler(monkeypatch):
     monkeypatch.setattr(miniirc, '_colon_warning', False)
     try:
         tmp, miniirc._global_handlers = miniirc._global_handlers, {}
+
         @miniirc.Handler('test', 1, ircv3=True, colon=False)
         def f(irc, hostmask, tags, args):
             ...
@@ -88,10 +92,11 @@ def test_Handler(monkeypatch):
     finally:
         miniirc._global_handlers = tmp
 
+
 def test_version():
     setup_py = pathlib.Path(__file__).resolve().parent / 'setup.py'
     with setup_py.open() as f:
-        match = re.search(r"version *= '([0-9\.a-z]+)',", f.read())
+        match = re.search(r"version *= *'([0-9\.a-z]+)',", f.read())
     assert match
     assert miniirc.__version__ == match.group(1)
 
@@ -99,12 +104,14 @@ def test_version():
             == miniirc.__version__)
     assert miniirc.version == 'miniirc IRC framework v' + miniirc.__version__
 
+
 def test_dict_to_tags():
     dict_to_tags = miniirc._dict_to_tags
     tags_dict = collections.OrderedDict((
         ('abc', True), ('def', False), ('ghi', ''), ('jkl', 'test\r\n; ')
     ))
     assert dict_to_tags(tags_dict) == rb'@abc;jkl=test\r\n\:\s '
+
 
 def test_logfile():
     msgs = []
@@ -120,14 +127,17 @@ def test_logfile():
         'This is the final line'
     ]
 
+
 class DummyIRC(miniirc.IRC):
     def __init__(self, ip='', port=0, nick='', *args, **kwargs):
         kwargs['auto_connect'] = False
         super().__init__(ip, port, nick, *args, **kwargs)
 
+
 class IRCQuoteWrapper(DummyIRC):
     res = None
     TEST_FUNC = 'quote'
+
     def quote(self, *args, force=None, tags=None):
         assert self.res is None
         self.res = (' '.join(args), tags)
@@ -145,6 +155,7 @@ class IRCQuoteWrapper(DummyIRC):
         res.__name__ = res.__qualname__ = 'test_' + test_func
         return res.test
 
+
 def test_irc_send():
     test = IRCQuoteWrapper.make_test('send')
     assert test('a') == ('a', None)
@@ -152,28 +163,35 @@ def test_irc_send():
     assert (test('', 'abc def\r\n', ':ghi', ':jkl', tags={'a': 'b'}) ==
             (' abc\xa0def\xa0\xa0 \u0703ghi ::jkl', {'a': 'b'}))
 
+
 irc_msg_funcs = {
     'msg': 'PRIVMSG {} :{}',
     'notice': 'NOTICE {} :{}',
     'ctcp': 'PRIVMSG {} :\x01{}\x01',
     'me': 'PRIVMSG {} :\x01ACTION {}\x01'
 }
+
+
 def test_irc_msg_funcs():
     for func, fmt in irc_msg_funcs.items():
         test = IRCQuoteWrapper.make_test(func)
         assert test('abc', ':def') == (fmt.format('abc', ':def'), None)
         assert (test('target', 'hello', 'world', tags={'abc': 'def'}) ==
-            (fmt.format('target', 'hello world'), {'abc': 'def'}))
+                (fmt.format('target', 'hello world'), {'abc': 'def'}))
+
 
 class FakeExecutor:
     submissions = 0
+
     def submit(self, *args):
         assert args == self.expected_args
         self.submissions += 1
 
+
 def test_executor(monkeypatch):
     executor = FakeExecutor()
     irc = DummyIRC(executor=executor)
+
     def fake_handler():
         pass
     executor.expected_args = (fake_handler, irc, ('a', 'b', 'c'), ['d'])
@@ -182,13 +200,16 @@ def test_executor(monkeypatch):
     irc._handle('test', ('a', 'b', 'c'), {}, ['d'])
     assert executor.submissions == 1
 
+
 def test_change_parser():
     irc = DummyIRC()
     assert irc._parse == miniirc.ircv3_message_parser
+
     def f(msg):
         ...
     irc.change_parser(f)
     assert irc._parse == f
+
 
 def test_get_ca_certs():
     try:
@@ -197,6 +218,7 @@ def test_get_ca_certs():
         assert miniirc.get_ca_certs() is None
     else:
         assert miniirc.get_ca_certs() == certifi.where()
+
 
 def test_start_main_loop(monkeypatch):
     irc = DummyIRC()
@@ -217,6 +239,7 @@ def test_start_main_loop(monkeypatch):
     assert event.wait(1)
     assert main_thread is irc._main_thread is thread
     assert not hasattr(irc, '_main_lock')
+
 
 def test_connection(monkeypatch):
     irc = err = None
@@ -295,7 +318,7 @@ def test_connection(monkeypatch):
                 return
             for line in fixed_responses[msg].split('\n'):
                 self._recvq.put(line.encode('utf-8') +
-                    random.choice((b'\r', b'\n', b'\r\n', b'\n\r')))
+                                random.choice((b'\r', b'\n', b'\r\n', b'\n\r')))
             socket_event.set()
             return len(data)
 
@@ -346,9 +369,10 @@ def test_connection(monkeypatch):
     try:
         event = threading.Event()
         irc = miniirc.IRC('example.com', 6667, 'miniirc-test',
-            auto_connect=False, ns_identity=('test', 'hunter2'), persist=False,
-            debug=True)
+                          auto_connect=False, ns_identity=('test', 'hunter2'), persist=False,
+                          debug=True)
         assert irc.connected is None
+
         @irc.Handler('001', colon=False)
         @catch_errors
         def _handle_001(irc, hostmask, args):
