@@ -477,8 +477,10 @@ class IRC:
         cap = cap.lower()
         self.active_caps.add(cap)
         if self._unhandled_caps and cap in self._unhandled_caps:
-            handled = self._handle('IRCv3 ' + cap,
-                                   ('CAP', 'CAP', 'CAP'), {}, self._unhandled_caps[cap])
+            handled = self._handle(
+                'IRCv3 ' + cap, ('CAP', 'CAP', 'CAP'), {},
+                self._unhandled_caps[cap]
+            )
             if not handled:
                 self.finish_negotiation(cap)
 
@@ -612,7 +614,7 @@ def _handler(irc, hostmask, args):
     if not irc.connected:
         try:
             return int(irc.nick[0])
-        except:
+        except ValueError:
             pass
         if len(irc.nick) >= irc.isupport.get('NICKLEN', 20):
             return
@@ -634,6 +636,7 @@ def _handler(irc, hostmask, args):
         return
     if args[-1].startswith('\x01VERSION') and args[-1].endswith('\x01'):
         irc.ctcp(hostmask[0], 'VERSION', version, reply=True)
+
 
 # Handle IRCv3 capabilities
 @Handler('CAP', colon=False)
@@ -675,6 +678,7 @@ def _handler(irc, hostmask, args):
             if cap in irc.active_caps:
                 irc.active_caps.remove(cap)
 
+
 # SASL
 @Handler('IRCv3 SASL')
 def _handler(irc, hostmask, args):
@@ -707,6 +711,7 @@ def _handler(irc, hostmask, args):
 def _handler(irc, hostmask, args):
     irc.finish_negotiation('sasl')
 
+
 # STS
 @Handler('IRCv3 STS')
 def _handler(irc, hostmask, args):
@@ -731,6 +736,7 @@ def _handler(irc, hostmask, args):
     else:
         irc.finish_negotiation('sts')
 
+
 # Maximum line length
 @Handler('IRCv3 oragono.io/maxline-2')
 def _handler(irc, hostmask, args):
@@ -740,6 +746,7 @@ def _handler(irc, hostmask, args):
         pass
 
     irc.finish_negotiation(args[0])
+
 
 # Handle ISUPPORT messages
 @Handler('005')
@@ -754,7 +761,7 @@ def _handler(irc, hostmask, args):
             isupport[key] = int(isupport[key])
             if key == 'NICKLEN':
                 irc.nick = irc.nick[:isupport[key]]
-        except:
+        except ValueError:
             if key.endswith('LEN'):
                 remove.add(key)
     for key in remove:
