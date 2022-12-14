@@ -8,9 +8,9 @@
 import atexit, threading, time, select, socket, ssl, sys, warnings
 
 # The version string and tuple
-ver = __version_info__ = (1, 9, 0)
-version = 'miniirc IRC framework v1.9.0'
-__version__ = '1.9.0'
+ver = __version_info__ = (1, 9, 1)
+version = 'miniirc IRC framework v1.9.1'
+__version__ = '1.9.1'
 
 # __all__ and _default_caps
 __all__ = ['CmdHandler', 'Handler', 'IRC']
@@ -335,8 +335,17 @@ class IRC:
                 # Otherwise wait for the socket to become writable
                 select.select((), (self.sock,), (self.sock,),
                               self.ping_timeout or self.ping_interval)
-        except (AttributeError, BrokenPipeError, socket.timeout):
-            # TODO: Consider not silently ignoring timeouts
+        except socket.timeout:
+            # Abort the connection if there was a timeout because the data may
+            # have been partially written
+            try:
+                self.sock.close()
+            except OSError:
+                pass
+
+            if force:
+                raise
+        except (AttributeError, BrokenPipeError):
             if force:
                 raise
         finally:
@@ -541,7 +550,12 @@ class IRC:
                     select.select((), (self.sock,), (self.sock,),
                                   self.ping_timeout or self.ping_interval)
 
-            except (OSError, socket.error) as e:
+                # Attempt to change nicknames every 30 seconds
+                if (self._keepnick_active and
+                        time.monotonic() > self._last_keepnick_attempt + 30):
+                    self.send('NICK', self._desired_nick, force=True)
+                    self._last_keepnick_attempt = time.monotonic()
+            except OSError as e:
                 self.debug('Lost connection!', repr(e))
                 self.disconnect(auto_reconnect=True)
                 while self.persist:
@@ -549,7 +563,7 @@ class IRC:
                     self.debug('Reconnecting...')
                     try:
                         self.connect()
-                    except (OSError, socket.error):
+                    except OSError:
                         self.debug('Failed to reconnect!')
                         self.connected = None
                     else:
@@ -565,19 +579,13 @@ class IRC:
                     self.debug('<<<', line)
                     try:
                         result = self._parse(line)
-                    except:
+                    except Exception:
                         result = None
                     if isinstance(result, tuple) and len(result) == 4:
                         self._handle(*result)
                     else:
                         self.debug('Ignored message:', line)
             del raw
-
-            # Attempt to change nicknames every 30 seconds
-            if (self._keepnick_active and
-                    time.monotonic() > self._last_keepnick_attempt + 30):
-                self.send('NICK', self._desired_nick)
-                self._last_keepnick_attempt = time.monotonic()
 
     def wait_until_disconnected(self, *, _timeout=None):
         # The main thread may be replaced on reconnects

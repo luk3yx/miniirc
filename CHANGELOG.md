@@ -8,14 +8,23 @@ Notes:
  - This changelog may contain typographical errors, it is still a
     work-in-progress.
 
+## 1.9.1 - 2022-12-14
+
+### Changed
+
+ - Fixed handling of socket timeouts when trying to recover nickname
+ - The socket is now closed if there's a connection timeout while writing data
+   since the socket may have partially written data.
+ - Removed use of the deprecated `socket.error`
+
 ## 1.9.0 - 2022-12-13
 
 ### Added
 
  - miniirc will now attempt to regain the originally specified nickname if it
-    cannot used when connecting. For compatibility, `irc.nick` will return the
-    current nickname while connected, however changing it will change the
-    desired nickname. This may change in the future.
+   cannot used when connecting. For compatibility, `irc.nick` will return the
+   current nickname while connected, however changing it will change the
+   desired nickname. This may change in the future.
 
 ### Changed
 
