@@ -576,7 +576,7 @@ class IRC:
             # Attempt to change nicknames every 30 seconds
             if (self._keepnick_active and
                     time.monotonic() > self._last_keepnick_attempt + 30):
-                self.send('NICK', self._desired_nick, force=True)
+                self.send('NICK', self._desired_nick)
                 self._last_keepnick_attempt = time.monotonic()
 
     def wait_until_disconnected(self, *, _timeout=None):
