@@ -808,7 +808,7 @@ def _handler(irc, hostmask, args):
     irc.isupport.update(isupport)
 
 
-# Attempt to get the current nickname if the user that currently has it quits
+# Attempt to get the desired nickname if the user that currently has it quits
 @Handler('QUIT', 'NICK')
 def _handler(irc, hostmask, args):
     if (irc.connected and irc._keepnick_active and
