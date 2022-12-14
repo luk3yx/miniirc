@@ -363,7 +363,6 @@ If miniirc v2.0.0 is ever released, the following breaking changes will
  - `irc.nick` will always be the nickname used when connecting to IRC rather
     than the current nickname, use `irc.current_nick` for the current nickname
     (since v1.4.3).
- - The `keepnick` parameter will default to True.
  - `irc.ns_identity` will be stored as a tuple instead of a string, for example
     `('username', 'password with spaces')` instead of
     `'username password with spaces'`. Both formats are currently accepted and
