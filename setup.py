@@ -7,7 +7,7 @@ with open('README.md', 'r') as f:
 
 setup(
     name='miniirc',
-    version='1.8.4',
+    version='1.9.0',
     py_modules=['miniirc'],
     author='luk3yx',
     description='A lightweight IRC framework.',

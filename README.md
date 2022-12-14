@@ -30,7 +30,7 @@ You don't need to add every argument, and the `ip`, `port`, `nick`, and
 `channels` arguments should be specified as positional arguments.
 
 ```py
-irc = miniirc.IRC('irc.example.com', 6697, 'my-bot', ['#my-channel'], ns_identity=('my-bot', 'hunter2'), executor=concurrent.futures.ThreadPoolExecutor())
+irc = miniirc.IRC('irc.example.com', 6697, 'my-bot', ['#my-channel'], ns_identity=('my-bot', 'hunter2'), executor=concurrent.futures.ThreadPoolExecutor(), keepnick=True)
 ```
 
 If you are not doing anything with the main thread after connecting to IRC,
@@ -64,6 +64,7 @@ irc.wait_until_disconnected()
 | `ping_timeout` | The ping timeout used alongside the above `ping_interval` option, if unspecified will default to `ping_interval`. |
 | `verify_ssl`  | Verifies TLS/SSL certificates. Disabling this is not recommended as it opens the IRC connection up to MiTM attacks. If you have trouble with certificate verification, try running `pip3 install certifi` first. |
 | `executor`    | An instance of `concurrent.futures.ThreadPoolExecutor` to use when running handlers. |
+| `keepnick`    | If enabled, miniirc will attempt to obtain the original nick like ZNC's *keepnick. `irc.nick` will be the original nickname rather than the current one. |
 
 *The only mandatory parameters are `ip`, `port`, and `nick`.*
 
@@ -121,10 +122,10 @@ space however not interpreted as one).
 | ------------- | --------------------------------------------------------  |
 | `active_caps` | A `set` of IRCv3 capabilities that have been successfully negotiated with the IRC server. This is empty while disconnected. |
 | `connected`   | A boolean (or `None`), `True` when miniirc is connected, `False` when miniirc is connecting, and `None` when miniirc is not connected. |
-| `current_nick` | *New in v1.4.3.* The bot/client's current nickname, currently an alias for `irc.nick`. Do not modify this, and use this instead of `irc.nick` when getting the bot's current nickname for compatibility with miniirc v2.0.0. |
+| `current_nick` | The bot/client's current nickname. Do not modify this, and use this instead of `irc.nick` when getting the bot's current nickname. |
 | `isupport`    | A `dict` with values (not necessarily strings) from `ISUPPORT` messages sent to the client. |
 | `msglen`      | The maximum length (in bytes) of messages (including `\r\n`). This is automatically changed if the server supports the `oragono.io/maxline-2` capability. |
-| `nick`        | The nickname to use when connecting to IRC. Until miniirc v2.0.0, you should only modify this while disconnected, as it is currently automatically updated with nickname changes. |
+| `nick`        | The nickname to use when connecting to IRC. Until miniirc v2.0.0, you should only use or modify this while disconnected, as it is currently automatically updated with nickname changes. |
 
 The following arguments passed to `miniirc.IRC` are also available: `ip`,
 `port`, `channels`, `ssl`, `ident`, `realname`, `persist`, `connect_modes`,
@@ -354,15 +355,15 @@ is still in beta and there will be breaking API changes in the future.
 
 ## Deprecations
 
-When miniirc v2.0.0 is released, the following breaking changes will (probably)
-be made:
+If miniirc v2.0.0 is ever released, the following breaking changes will
+(probably) be made:
 
  - Internal-only attributes `irc.handlers`, `irc.sock`, and `irc.sendq`
     (please do not use these) will be renamed. Again, please do not use these.
- - `irc.nick` will be the nickname used when connecting to IRC rather than the
-    current nickname, use `irc.current_nick` for the current nickname (since
-    v1.4.3). This will stop lots of underscores being automatically appended to
-    nicknames.
+ - `irc.nick` will always be the nickname used when connecting to IRC rather
+    than the current nickname, use `irc.current_nick` for the current nickname
+    (since v1.4.3).
+ - The `keepnick` parameter will default to True.
  - `irc.ns_identity` will be stored as a tuple instead of a string, for example
     `('username', 'password with spaces')` instead of
     `'username password with spaces'`. Both formats are currently accepted and

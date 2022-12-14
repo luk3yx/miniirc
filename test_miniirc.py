@@ -1,6 +1,6 @@
 #!/bin/false
-import collections, functools, miniirc, pathlib, queue, random, re, select, \
-       socket, threading, time
+import collections, functools, miniirc, pathlib, pytest, queue, random, re, \
+       select, socket, threading, time
 
 MINIIRC_V2 = miniirc.ver >= (2, 0, 0)
 if MINIIRC_V2:
@@ -241,6 +241,23 @@ def test_start_main_loop(monkeypatch):
     assert not hasattr(irc, '_main_lock')
 
 
+def test_nick_backwards_compatibility():
+    irc = DummyIRC()
+
+    # Changing nick should update everything
+    irc.nick = 'test1'
+    assert irc.current_nick == irc.nick == irc._desired_nick == 'test1'
+
+    # Changing _current_nick should update current_nick and nick
+    irc._current_nick = 'test2'
+    assert irc.current_nick == 'test2'
+    assert irc.nick == 'test2'
+    assert irc._desired_nick == 'test1'
+
+    irc.disconnect()
+    assert irc.current_nick == irc.nick == 'test1'
+
+
 def test_connection(monkeypatch):
     irc = err = None
 
@@ -269,12 +286,13 @@ def test_connection(monkeypatch):
         'AUTHENTICATE PLAIN': 'AUTHENTICATE +',
         'AUTHENTICATE dGVzdAB0ZXN0AGh1bnRlcjI=': '903',
         'CAP END': (
-            '001 parameter test :with colon\n'
+            '001 miniirc-test_ parameter test :with colon\n'
             '005 * CAP=END :isupport description\n'
         ),
         'USER miniirc-test 0 * :miniirc-test':
             ':a PRIVMSG miniirc-test :\x01VERSION\x01',
-        'NICK miniirc-test': '432',
+        'NICK miniirc-test': '433',
+        'NICK :miniirc-test': '433',
         'NICK miniirc-test_': '',
         'NOTICE a :\x01VERSION ' + miniirc.version + '\x01':
             '005 miniirc-test CTCP=VERSION :are supported by this server',
@@ -315,7 +333,7 @@ def test_connection(monkeypatch):
             msg = msg[:-2]
             assert msg in fixed_responses
             if self._recvq is None:
-                return
+                raise BrokenPipeError
             for line in fixed_responses[msg].split('\n'):
                 self._recvq.put(line.encode('utf-8') +
                                 random.choice((b'\r', b'\n', b'\r\n', b'\n\r')))
@@ -369,8 +387,8 @@ def test_connection(monkeypatch):
     try:
         event = threading.Event()
         irc = miniirc.IRC('example.com', 6667, 'miniirc-test',
-                          auto_connect=False, ns_identity=('test', 'hunter2'), persist=False,
-                          debug=True)
+                          auto_connect=False, ns_identity=('test', 'hunter2'),
+                          persist=False, debug=True)
         assert irc.connected is None
 
         @irc.Handler('001', colon=False)
@@ -380,7 +398,7 @@ def test_connection(monkeypatch):
                 if 'CAP' in irc.isupport and 'CTCP' in irc.isupport:
                     break
                 time.sleep(0.001)
-            assert args == ['parameter', 'test', 'with colon']
+            assert args == ['miniirc-test_', 'parameter', 'test', 'with colon']
             assert irc.isupport == {'CTCP': 'VERSION', 'CAP': 'END'}
             event.set()
 
@@ -389,11 +407,14 @@ def test_connection(monkeypatch):
         if err is not None:
             raise err
         assert irc.connected
+        assert irc._keepnick_active
         if MINIIRC_V2:
             assert irc.nick == 'miniirc-test'
-            assert irc.current_nick == 'miniirc-test_'
         else:
-            assert irc.nick == irc.current_nick == 'miniirc-test_'
+            assert irc._desired_nick == 'miniirc-test'
+            assert irc._current_nick == 'miniirc-test_'
+        assert irc.current_nick == 'miniirc-test_'
     finally:
         irc.disconnect()
         socket_event.set()
+        assert not irc.connected

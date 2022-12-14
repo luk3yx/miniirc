@@ -8,6 +8,19 @@ Notes:
  - This changelog may contain typographical errors, it is still a
     work-in-progress.
 
+## 1.9.0 - 2022-12-13
+
+### Added
+
+ - miniirc will now attempt to regain the originally specified nickname if it
+    cannot used when connecting. For compatibility, `irc.nick` will return the
+    current nickname while connected, however changing it will change the
+    desired nickname. This may change in the future.
+
+### Changed
+
+ - The current nickname is now obtained from the 001 response after connecting.
+
 ## 1.8.4 - 2022-08-22
 
 ### Changed

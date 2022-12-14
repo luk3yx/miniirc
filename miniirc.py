@@ -5,12 +5,12 @@
 # © 2018-2022 by luk3yx and other contributors of miniirc.
 #
 
-import atexit, errno, threading, time, select, socket, ssl, sys, warnings
+import atexit, threading, time, select, socket, ssl, sys, warnings
 
 # The version string and tuple
-ver = __version_info__ = (1, 8, 4)
-version = 'miniirc IRC framework v1.8.4'
-__version__ = '1.8.4'
+ver = __version_info__ = (1, 9, 0)
+version = 'miniirc IRC framework v1.9.0'
+__version__ = '1.9.0'
 
 # __all__ and _default_caps
 __all__ = ['CmdHandler', 'Handler', 'IRC']
@@ -204,7 +204,17 @@ class IRC:
     _unhandled_caps = None
 
     # This will no longer be an alias in miniirc v2.0.0.
-    current_nick = property(lambda self: self.nick)
+    # This is still a property to avoid breaking miniirc_matrix
+    current_nick = property(lambda self: self._current_nick)
+
+    # For backwards compatibility, irc.nick will return the current nickname.
+    # However, changing irc.nick will change the desired nickname as well
+    # TODO: Consider changing what irc.nick does if it won't break anything or
+    # making desired_nick public
+    @current_nick.setter
+    def nick(self, new_nick):
+        self._desired_nick = new_nick
+        self._current_nick = new_nick
 
     def __init__(self, ip, port, nick, channels=None, *, ssl=None, ident=None,
                  realname=None, persist=True, debug=False, ns_identity=None,
@@ -230,6 +240,7 @@ class IRC:
         self.ping_interval = ping_interval
         self.ping_timeout = ping_timeout
         self.verify_ssl = verify_ssl
+        self._keepnick_active = False
         self._executor = executor
 
         # Set the NickServ identity
@@ -387,14 +398,15 @@ class IRC:
             self.sock = ctx.wrap_socket(self.sock, server_hostname=self.ip)
 
         # Begin IRCv3 CAP negotiation.
+        self._current_nick = self._desired_nick
         self._unhandled_caps = None
         self.quote('CAP LS 302', force=True)
         self.quote('USER', self.ident, '0', '*', ':' + self.realname,
                    force=True)
-        self.quote('NICK', self.nick, force=True)
+        self.quote('NICK', self._desired_nick, force=True)
         atexit.register(self.disconnect)
         self.debug('Starting main loop...')
-        self._sasl = self._pinged = False
+        self._sasl = self._pinged = self._keepnick_active = False
         self._start_main_loop()
 
     def _start_main_loop(self):
@@ -410,6 +422,7 @@ class IRC:
         self.connected = None
         self.active_caps.clear()
         atexit.unregister(self.disconnect)
+        self._current_nick = self._desired_nick
         self._unhandled_caps = None
         try:
             self.quote('QUIT :' + str(msg or self.quit_message), force=True)
@@ -560,6 +573,12 @@ class IRC:
                         self.debug('Ignored message:', line)
             del raw
 
+            # Attempt to change nicknames every 30 seconds
+            if (self._keepnick_active and
+                    time.monotonic() > self._last_keepnick_attempt + 30):
+                self.send('NICK', self._desired_nick, force=True)
+                self._last_keepnick_attempt = time.monotonic()
+
     def wait_until_disconnected(self, *, _timeout=None):
         # The main thread may be replaced on reconnects
         while self._main_thread and self._main_thread.is_alive():
@@ -582,15 +601,27 @@ def _handler(irc, hostmask, args):
     irc.isupport.clear()
     irc._unhandled_caps = None
     irc.debug('Connected!')
+
+    # Update the current nickname and activate keepnick if required
+    irc._last_keepnick_attempt = time.monotonic()
+    irc._keepnick_active = args[0] != irc._desired_nick
+    irc._current_nick = args[0]
+
+    # Apply connection modes
     if irc.connect_modes:
-        irc.quote('MODE', irc.nick, irc.connect_modes)
+        irc.quote('MODE', irc.current_nick, irc.connect_modes)
+
+    # Log into NickServ if required
     if not irc._sasl and irc.ns_identity:
         irc.debug('Logging in (no SASL, aww)...')
         irc.msg('NickServ', 'identify ' + irc.ns_identity)
+
+    # Join channels
     if irc.channels:
         irc.debug('*** Joining channels...', irc.channels)
         irc.quote('JOIN', ','.join(irc.channels))
 
+    # Send any queued messages
     with irc._send_lock:
         sendq, irc.sendq = irc.sendq, None
     if sendq:
@@ -613,21 +644,26 @@ def _handler(irc, hostmask, args):
 def _handler(irc, hostmask, args):
     if not irc.connected:
         try:
-            return int(irc.nick[0])
+            return int(irc._current_nick[0])
         except ValueError:
             pass
-        if len(irc.nick) >= irc.isupport.get('NICKLEN', 20):
+        if len(irc._current_nick) >= irc.isupport.get('NICKLEN', 20):
             return
-        irc.debug('WARNING: The requested nickname', repr(irc.nick), 'is '
-                  'invalid. Trying again with', repr(irc.nick + '_') + '...')
-        irc.nick += '_'
-        irc.quote('NICK', irc.nick, force=True)
+        irc.debug('WARNING: The requested nickname', repr(irc._current_nick),
+                  'is invalid. Trying again with',
+                  repr(irc._current_nick + '_') + '...')
+        irc._current_nick += '_'
+        irc.quote('NICK', irc.current_nick, force=True)
 
 
 @Handler('NICK', colon=False)
 def _handler(irc, hostmask, args):
-    if hostmask[0].lower() == irc.nick.lower():
-        irc.nick = args[-1]
+    if hostmask[0].lower() == irc._current_nick.lower():
+        irc._current_nick = args[-1]
+
+        # Deactivate keepnick if the client has the right nickname
+        if irc._current_nick.lower() == irc._desired_nick.lower():
+            irc._keepnick_active = False
 
 
 @Handler('PRIVMSG', colon=False)
@@ -759,8 +795,10 @@ def _handler(irc, hostmask, args):
     for key in isupport:
         try:
             isupport[key] = int(isupport[key])
-            if key == 'NICKLEN':
-                irc.nick = irc.nick[:isupport[key]]
+
+            # Disable keepnick if the nickname is too long
+            if key == 'NICKLEN' and len(irc._desired_nick) > isupport[key]:
+                irc._keepnick_active = False
         except ValueError:
             if key.endswith('LEN'):
                 remove.add(key)
@@ -768,6 +806,22 @@ def _handler(irc, hostmask, args):
         del isupport[key]
 
     irc.isupport.update(isupport)
+
+
+# Attempt to get the current nickname if the user that currently has it quits
+@Handler('QUIT', 'NICK')
+def _handler(irc, hostmask, args):
+    if (irc.connected and irc._keepnick_active and
+            hostmask[0].lower() == irc._desired_nick.lower()):
+        irc.send('NICK', irc._desired_nick, force=True)
+        irc._last_keepnick_attempt = time.monotonic()
+
+
+# Stop trying to get the desired nickname if it's invalid or if nick changes
+# aren't permitted
+@Handler('432', '435', '447')
+def _handler(irc, hostmask, args):
+    irc._keepnick_active = False
 
 
 _colon_warning = True
