@@ -30,7 +30,7 @@ You don't need to add every argument, and the `ip`, `port`, `nick`, and
 `channels` arguments should be specified as positional arguments.
 
 ```py
-irc = miniirc.IRC('irc.example.com', 6697, 'my-bot', ['#my-channel'], ns_identity=('my-bot', 'hunter2'), executor=concurrent.futures.ThreadPoolExecutor(), keepnick=True)
+irc = miniirc.IRC('irc.example.com', 6697, 'my-bot', ['#my-channel'], ns_identity=('my-bot', 'hunter2'), executor=concurrent.futures.ThreadPoolExecutor())
 ```
 
 If you are not doing anything with the main thread after connecting to IRC,
@@ -64,7 +64,6 @@ irc.wait_until_disconnected()
 | `ping_timeout` | The ping timeout used alongside the above `ping_interval` option, if unspecified will default to `ping_interval`. |
 | `verify_ssl`  | Verifies TLS/SSL certificates. Disabling this is not recommended as it opens the IRC connection up to MiTM attacks. If you have trouble with certificate verification, try running `pip3 install certifi` first. |
 | `executor`    | An instance of `concurrent.futures.ThreadPoolExecutor` to use when running handlers. |
-| `keepnick`    | If enabled, miniirc will attempt to obtain the original nick like ZNC's *keepnick. `irc.nick` will be the original nickname rather than the current one. |
 
 *The only mandatory parameters are `ip`, `port`, and `nick`.*
 
