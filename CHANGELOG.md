@@ -11,7 +11,7 @@ Notes:
 
 ### Added
 
- - `server_password` command to send passwords on joining
+ - `server_password` argument to send `PASS` when connecting
 
 ### Changed
 

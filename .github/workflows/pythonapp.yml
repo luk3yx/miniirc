@@ -6,18 +6,25 @@ on: [push]
 
 jobs:
   run-tests:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-latest
 
     strategy:
       matrix:
-        python_version: [3.4, 3.5, 3.6, 3.7, 3.8, 3.9, 3, pypy3]
+        image:
+          - python:3.4-slim
+          - python:3.5-slim
+          - python:3.6-slim
+          - python:3.7-slim
+          - python:3.8-slim
+          - python:3.9-slim
+          - python:3-slim
+          - pypy:3-slim
+
+    container:
+        image: ${{ matrix.image }}
 
     steps:
-    - uses: actions/checkout@v2
-    - name: Set up Python ${{ matrix.python_version }}
-      uses: actions/setup-python@v2
-      with:
-        python-version: ${{ matrix.python_version }}
+    - uses: actions/checkout@v1
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
