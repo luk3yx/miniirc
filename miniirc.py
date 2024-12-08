@@ -132,13 +132,18 @@ def ircv3_message_parser(msg):
     # Get the command and arguments
     args = []
     c = 1
-    for i in n[2:]:
+    for word in n[2:]:
         c += 1
-        if i.startswith(':'):
+        if word.startswith(':'):
             args.append(' '.join(n[c:]))
             break
+        elif word:
+            args.append(word)
         else:
-            args.append(i)
+            # RFC 1459 allows multiple spaces to separate parameters, but this
+            # is very uncommon and could possibly happen if a server tries to
+            # send an empty parameter
+            raise ValueError('Ambiguous IRC message')
 
     # Return the parsed data
     return cmd, hostmask, tags, args
@@ -190,6 +195,9 @@ class _Logfile:
 def _prune_arg(arg):
     if arg.startswith(':'):
         arg = '\u0703' + arg[1:]
+    elif not arg:
+        # Replace the argument with something to prevent misinterpretation
+        arg = ' '
     return arg.replace(' ', '\xa0').replace('\r', '\xa0').replace('\n', '\xa0')
 
 
@@ -298,8 +306,8 @@ class IRC:
                     'draft/message-tags-0.2' not in self.active_caps)):
             tags = None
         self.debug('>3> ' + repr(tags) if tags else '>>>', *msg)
-        msg = (' '.join(msg).encode('utf-8').replace(b'\r', b' ')
-               .replace(b'\n', b' '))
+        msg = (' '.join(msg).replace('\x00', '\ufffd').encode('utf-8')
+               .replace(b'\r', b' ') .replace(b'\n', b' '))
 
         if len(msg) + 2 > self.msglen:
             msg = msg[:self.msglen - 2]
