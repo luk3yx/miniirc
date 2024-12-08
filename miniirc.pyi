@@ -204,6 +204,6 @@ class IRC:
         auto_connect: bool = True, ircv3_caps: Optional[set[str]] = None,
         connect_modes: Optional[str] = None,
         quit_message: str = 'I grew sick and died.', ping_interval: int = 60,
-        verify_ssl: bool = True,
+        verify_ssl: bool = True, server_password: Optional[str] = None,
         executor: Optional[concurrent.futures.ThreadPoolExecutor]
     ) -> None: ...

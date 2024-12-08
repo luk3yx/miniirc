@@ -5,8 +5,19 @@ Format partially copied from [Keep a Changelog](https://keepachangelog.com).
 Notes:
  - I strongly recommend you use the latest version of miniirc, there are major
     bugfixes that are not listed here.
- - This changelog may contain typographical errors, it is still a
-    work-in-progress.
+ - This changelog may contain errors.
+
+## 1.10.0 - 2024-12-09
+
+### Added
+
+ - `server_password` command to send passwords on joining
+
+### Changed
+
+ - Tags now get sent if you use an empty string as a value.
+ - Messages with multiple spaces separating arguments are now ignored instead
+   of being parsed incorrectly.
 
 ## 1.9.1 - 2022-12-14
 

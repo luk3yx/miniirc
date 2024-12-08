@@ -8,9 +8,9 @@
 import atexit, threading, time, select, socket, ssl, sys, warnings
 
 # The version string and tuple
-ver = __version_info__ = (1, 9, 1)
-version = 'miniirc IRC framework v1.9.1'
-__version__ = '1.9.1'
+ver = __version_info__ = (1, 10, 0)
+version = 'miniirc IRC framework v1.10.0'
+__version__ = '1.10.0'
 
 # __all__ and _default_caps
 __all__ = ['CmdHandler', 'Handler', 'IRC']
@@ -228,7 +228,8 @@ class IRC:
                  realname=None, persist=True, debug=False, ns_identity=None,
                  auto_connect=True, ircv3_caps=None, connect_modes=None,
                  quit_message='I grew sick and died.', ping_interval=60,
-                 ping_timeout=None, verify_ssl=True, executor=None):
+                 ping_timeout=None, verify_ssl=True, server_password=None,
+                 executor=None):
         # Set basic variables
         self.ip = ip
         self.port = int(port)
@@ -248,6 +249,7 @@ class IRC:
         self.ping_interval = ping_interval
         self.ping_timeout = ping_timeout
         self.verify_ssl = verify_ssl
+        self.server_password = server_password
         self._keepnick_active = False
         self._executor = executor
 
@@ -414,9 +416,10 @@ class IRC:
                 ctx.verify_mode = ssl.CERT_NONE
             self.sock = ctx.wrap_socket(self.sock, server_hostname=self.ip)
 
-        # Begin IRCv3 CAP negotiation.
         self._current_nick = self._desired_nick
         self._unhandled_caps = None
+        if self.server_password is not None:
+            self.send('PASS', self.server_password, force=True)
         self.quote('CAP LS 302', force=True)
         self.quote('USER', self.ident, '0', '*', ':' + self.realname,
                    force=True)
